@@ -1,0 +1,10 @@
+# Optional. The app and the tests use an embedded Postgres (PGlite) by default.
+# Start this and set DATABASE_URL to run against a real Postgres 16 server.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: brightside
+    ports:
+      - "127.0.0.1:54330:5432"
