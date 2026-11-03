@@ -1,0 +1,112 @@
+{
+  "app": "Brightside Salons booking app (fictional company, open-source demo)",
+  "findings": [
+    {
+      "id": 1,
+      "risk": "Critical",
+      "owner_title": "Your payment account key is visible to every visitor",
+      "what_could_happen": "Anyone who opens the site can copy the secret key of the payment account from the page's code. With it they can act as the business at the payment provider: create charges, issue refunds, read customer payment data.",
+      "dev_title": "Payment secret key in a NEXT_PUBLIC_ variable, used in a client component",
+      "where": "src/app/bookings/pay-deposit-button.tsx, .env.example",
+      "fix": "Checkout moved to a server route (/api/checkout) that checks the session; the key lives only in a server variable. Modules that hold secrets import server-only, so a client import fails the build.",
+      "action_now": "Rotate the key at the payment provider. Fixing the code does not un-leak a key that was already shipped.",
+      "test": "tests/findings/01-secret-in-browser.test.ts",
+      "e2e": "e2e/bundle.spec.ts",
+      "commit": "Fix 1:"
+    },
+    {
+      "id": 2,
+      "risk": "Critical",
+      "owner_title": "Anyone could see and cancel other customers' bookings",
+      "what_could_happen": "A logged-in customer changes one number in a request and sees another customer's appointments and private notes, or cancels them. Booking numbers are sequential, so every booking can be reached.",
+      "dev_title": "IDOR: API trusts userId from the query string and body; cancel has no ownership check",
+      "where": "src/app/api/bookings/route.ts, src/app/api/bookings/[id]/cancel/route.ts",
+      "fix": "The user comes from the signed session cookie. Cancel only matches the caller's own booking and answers 404 otherwise. Logged-out calls get 401.",
+      "action_now": "Check the server logs for cancellations that did not come from the booking's owner, if logs exist.",
+      "test": "tests/findings/02-other-customers-bookings.test.ts",
+      "e2e": "e2e/other-customers-bookings.spec.ts",
+      "commit": "Fix 2:"
+    },
+    {
+      "id": 3,
+      "risk": "Critical",
+      "owner_title": "A fake payment message could charge cards, and a repeated one charged twice",
+      "what_could_happen": "The address that receives payment notifications accepted messages from anyone. Payment providers also resend notifications they are not sure arrived; each resend charged the customer's deposit again. Double charges mean refunds, chargeback fees and angry reviews.",
+      "dev_title": "Webhook without signature verification or idempotency",
+      "where": "src/app/api/payments/webhook/route.ts",
+      "fix": "HMAC signature and timestamp checked on the raw body; each event id recorded once (processed_events); the booking row is locked and only charged while it waits for a deposit; the charge carries an idempotency key.",
+      "action_now": "Compare deposits in the provider dashboard with bookings; refund any duplicates.",
+      "test": "tests/findings/03-payment-webhook.test.ts",
+      "commit": "Fix 3:"
+    },
+    {
+      "id": 5,
+      "risk": "High",
+      "owner_title": "Appointments were saved at the wrong time",
+      "what_could_happen": "The server reads the time the customer picked in its own time zone (UTC on most hosts), not the salon's. A 10:00 booking in Chicago becomes 4:00 AM. Staff and customers see different times, and opening hours are checked against the wrong clock.",
+      "dev_title": "new Date(`${date}T${time}`) uses the server time zone",
+      "where": "src/lib/booking-time.ts",
+      "fix": "Times are converted from America/Chicago with daylight saving handled; opening hours use the salon's clock; the app shows salon time.",
+      "action_now": "Existing bookings were stored hours off. Shift them with a one-off script after checking a few by hand.",
+      "test": "tests/findings/05-time-zone.test.ts",
+      "commit": "Fix 5:"
+    },
+    {
+      "id": 6,
+      "risk": "High",
+      "owner_title": "Customers could set their own price",
+      "what_could_happen": "The booking form saved whatever the browser sent. Anyone with the browser's developer tools could book a $55 haircut for $0 or mark it as already confirmed. Malformed input crashed the request instead of showing a message.",
+      "dev_title": "Mass assignment (...body into insert) and no input validation",
+      "where": "src/app/api/bookings/route.ts",
+      "fix": "zod schemas on every request body (unknown keys dropped); a 400 that names the bad field; price and status set by the server.",
+      "action_now": "Look for bookings whose price differs from the service price.",
+      "test": "tests/findings/06-input-validation.test.ts",
+      "commit": "Fix 6:"
+    },
+    {
+      "id": 7,
+      "risk": "High",
+      "owner_title": "Unlimited password guessing",
+      "what_could_happen": "A script could try passwords against a customer's account as fast as the server answers. Reused or weak passwords fall quickly.",
+      "dev_title": "No rate limit on the credentials login",
+      "where": "src/app/api/auth/login/route.ts",
+      "fix": "Attempts recorded per account; after 5 failures in 15 minutes, login answers 429 with Retry-After, checked before the password.",
+      "action_now": "None required.",
+      "test": "tests/findings/07-login-rate-limit.test.ts",
+      "commit": "Fix 7:"
+    },
+    {
+      "id": 8,
+      "risk": "Medium",
+      "owner_title": "Errors were hidden instead of handled",
+      "what_could_happen": "The build was told to ignore code errors, and one of them was a real bug: the salon took bookings on Sundays, when it is closed. When a deposit charge failed, the app told the payment provider all was fine, so the charge was never retried and the booking stayed unpaid.",
+      "dev_title": "ignoreBuildErrors: true and catch {} in the webhook and cancel routes",
+      "where": "next.config.ts, src/lib/booking-time.ts, src/app/api/payments/webhook/route.ts",
+      "fix": "Type checking is back in the build and the Sunday bug is fixed. The webhook answers 500 on failure so the provider retries (safe since Fix 3). Cancel no longer reports success when the update fails.",
+      "action_now": "Check for Sunday bookings and for bookings stuck in 'pending deposit'.",
+      "test": "tests/findings/08-hidden-errors.test.ts",
+      "commit": "Fix 8:"
+    },
+    {
+      "id": 4,
+      "risk": "Medium",
+      "owner_title": "One person could end up with two accounts",
+      "what_could_happen": "Two sign-ups at the same moment, or the same email typed with a capital letter, created two accounts. Bookings split between them and password resets go to the wrong one.",
+      "dev_title": "Check-then-insert race; no unique index; emails not normalized",
+      "where": "src/app/api/auth/signup/route.ts, src/db/schema.ts",
+      "fix": "Emails stored lower-case; a unique index on lower(email) decides; the losing request gets 409.",
+      "action_now": "The migration stops if duplicates already exist. Merge those accounts first.",
+      "test": "tests/findings/04-duplicate-signup.test.ts",
+      "commit": "Fix 4:"
+    }
+  ],
+  "extra": [
+    {
+      "title": "Session signing key had a hard-coded fallback",
+      "risk": "Critical if deployed without SESSION_SECRET",
+      "fix": "Required in production, like the other secrets.",
+      "test": "tests/session.test.ts",
+      "commit": "Require SESSION_SECRET"
+    }
+  ]
+}

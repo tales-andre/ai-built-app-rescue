@@ -1,0 +1,52 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  after:
+    name: main (fixed code, must pass)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  before:
+    name: vibe-coded tag (same tests, expected to fail)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the tag and its history
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/test-before.mjs --strict 2>&1 | tee before-output.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: before-output
+          path: before-output.txt
+
+  e2e:
+    name: end-to-end (production build, Chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

@@ -1,13 +1,17 @@
 {
   "before": {
-    "passed": 7,
-    "failed": 27,
+    "passed": 8,
+    "failed": 28,
     "files": {
       "tests/app.test.ts": {
         "a customer can log in with the right password and not with a wrong one": "passed",
         "a customer can book, see the booking and cancel it": "passed",
         "the booking price comes from the service list": "passed",
         "a signed checkout event charges the deposit and confirms the booking": "passed"
+      },
+      "tests/session.test.ts": {
+        "a production server without SESSION_SECRET refuses to create sessions": "failed",
+        "a cookie signed with another secret is not accepted": "passed"
       },
       "tests/findings/01-secret-in-browser.test.ts": {
         "no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example)": "failed",
@@ -58,7 +62,7 @@
     }
   },
   "after": {
-    "passed": 34,
+    "passed": 36,
     "failed": 0,
     "files": {
       "tests/app.test.ts": {
@@ -66,6 +70,10 @@
         "a customer can book, see the booking and cancel it": "passed",
         "the booking price comes from the service list": "passed",
         "a signed checkout event charges the deposit and confirms the booking": "passed"
+      },
+      "tests/session.test.ts": {
+        "a production server without SESSION_SECRET refuses to create sessions": "passed",
+        "a cookie signed with another secret is not accepted": "passed"
       },
       "tests/findings/01-secret-in-browser.test.ts": {
         "no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example)": "passed",

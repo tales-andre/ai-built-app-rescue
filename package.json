@@ -10,7 +10,10 @@
     "db:generate": "drizzle-kit generate",
     "test": "vitest run",
     "test:before": "node scripts/test-before.mjs",
-    "test:e2e": "next build && playwright test"
+    "test:e2e": "next build && playwright test",
+    "evidence": "node scripts/evidence.mjs --e2e",
+    "docs:build": "node scripts/build-docs.mjs && node scripts/capture.mjs",
+    "report:pdf": "node scripts/report-pdf.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.14",

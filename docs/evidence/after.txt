@@ -1,45 +1,47 @@
 
  RUN  v5.1.0 <repo>
 
- ✓ tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > two sign-ups with the same email at the same moment create one account 10555ms
- ✓ tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > Dana@Example.com and dana@example.com are the same account 278ms
- ✓ tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the production build does not skip type errors 10907ms
- ✓ tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example) 21ms
- ✓ tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > browser code does not import server modules that hold secrets 14ms
- ✓ tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > modules that hold secrets are marked server-only, so a future client import fails the build 5ms
- ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a customer cannot book a $55 haircut for $0 or mark it as already confirmed 11244ms
- ✓ tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > 10:00 on Nov 10 is saved as 10:00 salon time (16:00 UTC), not 10:00 UTC 11197ms
- ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request without the provider's signature is rejected and charges nothing 10912ms
- ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a missing service gets a clear 400 with the field name, not a 500 242ms
- ✓ tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > after 5 wrong passwords, login is paused for that account, even with the right password 11822ms
- ✓ tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > follows daylight saving time: 10:00 on Oct 30 is 15:00 UTC 355ms
- ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request signed with the wrong secret is rejected 345ms
- ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a malformed date gets a 400 that names the field 332ms
- ✓ tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > opening hours are checked in salon time: 17:30 is accepted 476ms
- ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a replayed request older than 5 minutes is rejected 309ms
- ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot list Bob's bookings by changing the userId in the request 11771ms
- ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a service that does not exist gets a 400, not a 500 400ms
- ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > notes longer than 1,000 characters are refused 244ms
- ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > the same event delivered twice (provider retry) charges the deposit once 259ms
- ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > two checkouts for the same booking (double click) charge the deposit once 281ms
- ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot cancel Bob's booking 483ms
- ✓ tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > the limit is per account, whatever the letter case 1625ms
- ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot create a booking in Bob's name 955ms
- ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > a logged-out visitor gets 401, not someone's bookings 502ms
- ✓ tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > a couple of typos followed by the right password still logs in 785ms
- ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Bob can still list and cancel his own booking 371ms
- ✓ tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the code type-checks 9773ms
- ✓ tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the salon is closed on Sundays: a Sunday booking is refused (the bug the type error hid) 164ms
- ✓ tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > when the deposit charge fails, the webhook answers 500 so the provider retries 245ms
- ✓ tests/app.test.ts > Normal use keeps working > a customer can log in with the right password and not with a wrong one 5734ms
- ✓ tests/app.test.ts > Normal use keeps working > a customer can book, see the booking and cancel it 241ms
- ✓ tests/app.test.ts > Normal use keeps working > the booking price comes from the service list 211ms
- ✓ tests/app.test.ts > Normal use keeps working > a signed checkout event charges the deposit and confirms the booking 231ms
+ ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request without the provider's signature is rejected and charges nothing 9858ms
+ ✓ tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the production build does not skip type errors 9997ms
+ ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot list Bob's bookings by changing the userId in the request 10002ms
+ ✓ tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > two sign-ups with the same email at the same moment create one account 10204ms
+ ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request signed with the wrong secret is rejected 247ms
+ ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a replayed request older than 5 minutes is rejected 204ms
+ ✓ tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > Dana@Example.com and dana@example.com are the same account 228ms
+ ✓ tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > 10:00 on Nov 10 is saved as 10:00 salon time (16:00 UTC), not 10:00 UTC 10343ms
+ ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a customer cannot book a $55 haircut for $0 or mark it as already confirmed 10373ms
+ ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot cancel Bob's booking 462ms
+ ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > the same event delivered twice (provider retry) charges the deposit once 290ms
+ ✓ tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > follows daylight saving time: 10:00 on Oct 30 is 15:00 UTC 242ms
+ ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a missing service gets a clear 400 with the field name, not a 500 298ms
+ ✓ tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > opening hours are checked in salon time: 17:30 is accepted 349ms
+ ✓ tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > two checkouts for the same booking (double click) charge the deposit once 359ms
+ ✓ tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example) 24ms
+ ✓ tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > browser code does not import server modules that hold secrets 13ms
+ ✓ tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > modules that hold secrets are marked server-only, so a future client import fails the build 4ms
+ ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a malformed date gets a 400 that names the field 377ms
+ ✓ tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > after 5 wrong passwords, login is paused for that account, even with the right password 11150ms
+ ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot create a booking in Bob's name 640ms
+ ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a service that does not exist gets a 400, not a 500 270ms
+ ✓ tests/session.test.ts > Session secret > a production server without SESSION_SECRET refuses to create sessions 6ms
+ ✓ tests/session.test.ts > Session secret > a cookie signed with another secret is not accepted 40ms
+ ✓ tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > notes longer than 1,000 characters are refused 257ms
+ ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > a logged-out visitor gets 401, not someone's bookings 486ms
+ ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Bob can still list and cancel his own booking 366ms
+ ✓ tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > the limit is per account, whatever the letter case 1093ms
+ ✓ tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > a couple of typos followed by the right password still logs in 629ms
+ ✓ tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the code type-checks 5693ms
+ ✓ tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the salon is closed on Sundays: a Sunday booking is refused (the bug the type error hid) 151ms
+ ✓ tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > when the deposit charge fails, the webhook answers 500 so the provider retries 175ms
+ ✓ tests/app.test.ts > Normal use keeps working > a customer can log in with the right password and not with a wrong one 3336ms
+ ✓ tests/app.test.ts > Normal use keeps working > a customer can book, see the booking and cancel it 161ms
+ ✓ tests/app.test.ts > Normal use keeps working > the booking price comes from the service list 125ms
+ ✓ tests/app.test.ts > Normal use keeps working > a signed checkout event charges the deposit and confirms the booking 106ms
 
- Test Files  9 passed (9)
-      Tests  34 passed (34)
-   Start at  09:29:30
-   Duration  33.10s (tests 64%, import 35%)
+ Test Files  10 passed (10)
+      Tests  36 passed (36)
+   Start at  09:37:16
+   Duration  25.60s (tests 65%, import 35%)
 
 JSON report written to <repo>/.data/evidence/after.json
 (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:

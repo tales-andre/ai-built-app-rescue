@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-built app rescue: before and after</title>
+<meta name="description" content="Open-source demo: a fictional salon booking app with mistakes typical of AI-generated code, each fixed in its own commit with a test that fails before and passes after.">
+<style>
+  :root {
+    --bg: #f5f3ef; --card: #ffffff; --ink: #1f1a16; --muted: #6b6159; --line: #e4ddd4;
+    --bad: #b42318; --bad-bg: #fdecea; --ok: #1f7a43; --ok-bg: #e6f4ea; --warn: #9a5b00; --warn-bg: #fff4e0;
+    --code-bg: #faf8f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171512; --card: #211e1a; --ink: #f1ece6; --muted: #b3a89c; --line: #3a342d;
+      --bad: #ff8a80; --bad-bg: #3b1d1a; --ok: #7ad19b; --ok-bg: #18301f; --warn: #f2b45a; --warn-bg: #352712;
+      --code-bg: #1b1916;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 16px 64px; }
+  .kicker { color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-size: 13px; font-weight: 600; }
+  h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.15; margin: 6px 0 12px; }
+  .intro { color: var(--muted); max-width: 760px; }
+  .summary { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 28px; }
+  .pill { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; margin: 0 0 18px; }
+  .card header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .card h2 { font-size: 22px; line-height: 1.25; margin: 0; }
+  .risk { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-radius: 999px; padding: 4px 10px; }
+  .risk-critical { background: var(--bad-bg); color: var(--bad); }
+  .risk-high { background: var(--warn-bg); color: var(--warn); }
+  .risk-medium { background: var(--code-bg); color: var(--muted); border: 1px solid var(--line); }
+  .owner { margin: 12px 0 14px; }
+  .ba { display: flex; align-items: stretch; gap: 12px; margin: 0 0 14px; }
+  .ba > .before, .ba > .after { flex: 1; border-radius: 10px; padding: 10px 14px; }
+  .before { background: var(--bad-bg); color: var(--bad); }
+  .after { background: var(--ok-bg); color: var(--ok); }
+  .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+  .big { font-size: 18px; font-weight: 700; }
+  .arrow { align-self: center; color: var(--muted); font-size: 22px; }
+  table.tests { width: 100%; border-collapse: collapse; font-size: 14px; margin: 0 0 12px; }
+  table.tests th, table.tests td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  table.tests th { color: var(--muted); font-weight: 600; }
+  table.tests td:nth-child(2), table.tests td:nth-child(3), table.tests th:nth-child(2), table.tests th:nth-child(3) { width: 64px; text-align: center; }
+  .ok, .bad, .na { font-weight: 700; font-size: 12px; text-transform: uppercase; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .na { color: var(--muted); }
+  .dev, .now { font-size: 14px; color: var(--muted); margin: 8px 0; }
+  .now { color: var(--warn); }
+  details { margin-top: 10px; font-size: 14px; }
+  summary { cursor: pointer; color: var(--muted); }
+  pre.diff { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow-x: auto; font: 12.5px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; }
+  pre.diff span { display: block; white-space: pre; }
+  pre.diff .add { color: var(--ok); background: var(--ok-bg); }
+  pre.diff .del { color: var(--bad); background: var(--bad-bg); }
+  pre.diff .hunk { color: var(--muted); }
+  pre.diff .meta { display: none; }
+  pre.diff .file { font-weight: 700; margin-top: 8px; }
+  .more { color: var(--muted); font-size: 13px; }
+  code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .92em; }
+  a { color: inherit; }
+  footer { color: var(--muted); font-size: 14px; margin-top: 28px; }
+  @media (max-width: 600px) {
+    .card { padding: 16px; }
+    .ba { flex-direction: column; } .arrow { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Open-source demo &middot; fictional company</div>
+  <h1>AI-built booking app, rescued for production</h1>
+  <p class="intro">Brightside Salons is a fictional salon chain. Its booking app was written on purpose
+  with mistakes that AI-generated code often ships with. Each card is one finding: what it means
+  for the business, the tests that prove it (run against the original code and the fixed code),
+  and the commit that fixes it.</p>
+  <div class="summary">
+    <div class="pill">Same tests, two versions: tag <code>vibe-coded</code> and branch <code>main</code></div>
+    <div class="pill">Before: 28 failing, 8 passing</div>
+    <div class="pill">After: 36 passing, 0 failing</div>
+    <div class="pill">Normal use (<code>tests/app.test.ts</code>): 4/4 before, 4/4 after</div>
+  </div>
+  
+  <article class="card" id="finding-1">
+    <header>
+      <span class="risk risk-critical">Critical</span>
+      <h2>Your payment account key is visible to every visitor</h2>
+    </header>
+    <p class="owner"><strong>What could happen to your business:</strong> Anyone who opens the site can copy the secret key of the payment account from the page's code. With it they can act as the business at the payment provider: create charges, issue refunds, read customer payment data.</p>
+    <div class="ba">
+      <div class="before"><div class="label">Before</div><div class="big">2 of 3 tests fail</div></div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <div class="after"><div class="label">After</div><div class="big">3 of 3 pass</div></div>
+    </div>
+    <table class="tests">
+      <thead><tr><th>Test (<code>tests/findings/01-secret-in-browser.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
+      <tbody><tr><td>no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example)</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>browser code does not import server modules that hold secrets</td><td><span class="ok">pass</span></td><td><span class="ok">pass</span></td></tr><tr><td>modules that hold secrets are marked server-only, so a future client import fails the build</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr></tbody>
+    </table>
+    <p class="dev"><strong>For your developer:</strong> Payment secret key in a NEXT_PUBLIC_ variable, used in a client component. <strong>Fix:</strong> Checkout moved to a server route (/api/checkout) that checks the session; the key lives only in a server variable. Modules that hold secrets import server-only, so a client import fails the build.</p>
+    <p class="now"><strong>To do outside the code:</strong> Rotate the key at the payment provider. Fixing the code does not un-leak a key that was already shipped.</p>
+    <details><summary>The fix: <code>Fix 1: keep the payment secret key on the server</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/d26049645985d23fc999b9fcf3c1bfe8cf5b4ef1">d260496</a>)</summary>
+      <pre class="diff"><span class="file">.env.example</span>
+<span class="meta">--- a/.env.example</span>
+<span class="meta">+++ b/.env.example</span>
+<span class="hunk">@@ -3,6 +3,4 @@ SESSION_SECRET=dev-only-session-secret-change-me</span>
+<span class=""> PAYDEMO_SECRET_KEY=sk_demo_51BrightsideDoNotShip</span>
+<span class=""> PAYDEMO_WEBHOOK_SECRET=whsec_demo_brightside</span>
+<span class="del">-# Needed by the &quot;Pay deposit&quot; button</span>
+<span class="del">-NEXT_PUBLIC_PAYDEMO_SECRET_KEY=sk_demo_51BrightsideDoNotShip</span>
+<span class=""> # Optional: use a real Postgres (docker compose up -d) instead of the embedded PGlite database</span>
+<span class=""> # DATABASE_URL=postgres://postgres:postgres@localhost:54330/brightside</span>
+<span class="file">src/app/api/checkout/route.ts</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/src/app/api/checkout/route.ts</span>
+<span class="hunk">@@ -0,0 +1,26 @@</span>
+<span class="add">+import { and, eq } from &quot;drizzle-orm&quot;;</span>
+<span class="add">+import { getDb } from &quot;@/db&quot;;</span>
+<span class="add">+import { bookings } from &quot;@/db/schema&quot;;</span>
+<span class="add">+import { createCheckout } from &quot;@/lib/paydemo&quot;;</span>
+<span class="add">+import { getSessionUserId } from &quot;@/lib/session&quot;;</span>
+<span class="add">+</span>
+<span class="add">+// The browser asks the server to start the deposit checkout. The secret key</span>
+<span class="add">+// stays on the server; the browser never sees it.</span>
+<span class="add">+export async function POST(req: Request) {</span>
+<span class="add">+  const userId = getSessionUserId(req);</span>
+<span class="add">+  if (!userId) return Response.json({ error: &quot;Please log in&quot; }, { status: 401 });</span>
+<span class="add">+</span>
+<span class="add">+  const { bookingId } = await req.json();</span>
+<span class="add">+  const db = await getDb();</span>
+<span class="add">+  const [booking] = await db</span>
+<span class="add">+    .select()</span>
+<span class="add">+    .from(bookings)</span>
+<span class="add">+    .where(and(eq(bookings.id, Number(bookingId)), eq(bookings.userId, userId)));</span>
+<span class="add">+  if (!booking) return Response.json({ error: &quot;Booking not found&quot; }, { status: 404 });</span>
+<span class="add">+  if (booking.status !== &quot;pending_deposit&quot;) {</span>
+<span class="add">+    return Response.json({ error: &quot;Deposit already paid&quot; }, { status: 409 });</span>
+<span class="add">+  }</span>
+<span class="add">+</span>
+<span class="add">+  const result = await createCheckout(booking.id, new URL(req.url).origin);</span>
+<span class="add">+  return Response.json(result);</span>
+<span class="add">+}</span>
+<span class="file">src/app/bookings/pay-deposit-button.tsx</span>
+<span class="meta">--- a/src/app/bookings/pay-deposit-button.tsx</span>
+<span class="meta">+++ b/src/app/bookings/pay-deposit-button.tsx</span>
+<span class="hunk">@@ -2,5 +2,5 @@</span>
+<span class=""> import { useState } from &quot;react&quot;;</span>
+<span class=""> </span>
+<span class="del">-// Opens the PayDemo checkout for the deposit</span>
+<span class="add">+// Starts the PayDemo checkout for the deposit through our own server route</span>
+<span class=""> export function PayDepositButton({ bookingId, onDone }: { bookingId: number; onDone: () =&gt; void }) {</span>
+<span class="">   const [busy, setBusy] = useState(false);</span>
+<span class="hunk">@@ -8,10 +8,7 @@ export function PayDepositButton({ bookingId, onDone }: { bookingId: number; onD</span>
+<span class="">   async function pay() {</span>
+<span class="">     setBusy(true);</span>
+<span class="del">-    await fetch(&quot;/api/paydemo-sim/checkout&quot;, {</span>
+<span class="add">+    await fetch(&quot;/api/checkout&quot;, {</span>
+<span class="">       method: &quot;POST&quot;,</span>
+<span class="del">-      headers: {</span>
+<span class="del">-        &quot;content-type&quot;: &quot;application/json&quot;,</span>
+<span class="del">-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_PAYDEMO_SECRET_KEY}`,</span>
+<span class="del">-      },</span>
+<span class="add">+      headers: { &quot;content-type&quot;: &quot;application/json&quot; },</span>
+<span class="">       body: JSON.stringify({ bookingId }),</span>
+<span class="">     });</span>
+<span class="file">src/db/index.ts</span>
+<span class="meta">--- a/src/db/index.ts</span>
+<span class="meta">+++ b/src/db/index.ts</span>
+<span class="hunk">@@ -1,2 +1,3 @@</span>
+<span class="add">+import &quot;server-only&quot;;</span>
+<span class=""> import { PGlite } from &quot;@electric-sql/pglite&quot;;</span>
+<span class=""> import { drizzle } from &quot;drizzle-orm/pglite&quot;;</span>
+<span class="file">src/lib/env.ts</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/src/lib/env.ts</span>
+<span class="hunk">@@ -0,0 +1,11 @@</span>
+<span class="add">+import &quot;server-only&quot;;</span>
+<span class="add">+</span>
+<span class="add">+/** Reads a server-side secret. Demo default in development and tests; required in production. */</span>
+<span class="add">+export function serverSecret(name: string, devDefault: string): string {</span>
+<span class="add">+  const value = process.env[name];</span>
+<span class="add">+  if (value) return value;</span>
+<span class="add">+  if (process.env.NODE_ENV === &quot;production&quot; &amp;&amp; !process.env.DEMO_DEFAULTS) {</span>
+<span class="add">+    throw new Error(`${name} is not set`);</span>
+<span class="add">+  }</span>
+<span class="add">+  return devDefault;</span>
+<span class="add">+}</span>
+<span class="file">src/lib/paydemo.ts</span>
+<span class="meta">--- a/src/lib/paydemo.ts</span>
+<span class="meta">+++ b/src/lib/paydemo.ts</span>
+<span class="hunk">@@ -1,2 +1,5 @@</span>
+<span class="add">+import &quot;server-only&quot;;</span></pre><p class="more">36 more lines in the commit.</p></details>
+  </article>
+
+  <article class="card" id="finding-2">
+    <header>
+      <span class="risk risk-critical">Critical</span>
+      <h2>Anyone could see and cancel other customers' bookings</h2>
+    </header>
+    <p class="owner"><strong>What could happen to your business:</strong> A logged-in customer changes one number in a request and sees another customer's appointments and private notes, or cancels them. Booking numbers are sequential, so every booking can be reached.</p>
+    <div class="ba">
+      <div class="before"><div class="label">Before</div><div class="big">4 of 5 tests fail</div></div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <div class="after"><div class="label">After</div><div class="big">5 of 5 pass</div></div>
+    </div>
+    <table class="tests">
+      <thead><tr><th>Test (<code>tests/findings/02-other-customers-bookings.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
+      <tbody><tr><td>Alice cannot list Bob's bookings by changing the userId in the request</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Alice cannot cancel Bob's booking</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Alice cannot create a booking in Bob's name</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a logged-out visitor gets 401, not someone's bookings</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Bob can still list and cancel his own booking</td><td><span class="ok">pass</span></td><td><span class="ok">pass</span></td></tr></tbody>
+    </table>
+    <p class="dev"><strong>For your developer:</strong> IDOR: API trusts userId from the query string and body; cancel has no ownership check. <strong>Fix:</strong> The user comes from the signed session cookie. Cancel only matches the caller's own booking and answers 404 otherwise. Logged-out calls get 401.</p>
+    <p class="now"><strong>To do outside the code:</strong> Check the server logs for cancellations that did not come from the booking's owner, if logs exist.</p>
+    <details><summary>The fix: <code>Fix 2: take the customer from the session, not from the request</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/117dd3b0e1b541152ea54165e8445ab11a43b5b1">117dd3b</a>)</summary>
+      <pre class="diff"><span class="file">src/app/api/bookings/[id]/cancel/route.ts</span>
+<span class="meta">--- a/src/app/api/bookings/[id]/cancel/route.ts</span>
+<span class="meta">+++ b/src/app/api/bookings/[id]/cancel/route.ts</span>
+<span class="hunk">@@ -1,12 +1,22 @@</span>
+<span class="del">-import { eq } from &quot;drizzle-orm&quot;;</span>
+<span class="add">+import { and, eq } from &quot;drizzle-orm&quot;;</span>
+<span class=""> import { getDb } from &quot;@/db&quot;;</span>
+<span class=""> import { bookings } from &quot;@/db/schema&quot;;</span>
+<span class="add">+import { getSessionUserId } from &quot;@/lib/session&quot;;</span>
+<span class=""> </span>
+<span class="del">-// Cancel a booking</span>
+<span class="add">+// Cancel one of the logged-in customer's bookings</span>
+<span class=""> export async function POST(req: Request, { params }: { params: Promise&lt;{ id: string }&gt; }) {</span>
+<span class="add">+  const userId = getSessionUserId(req);</span>
+<span class="add">+  if (!userId) return Response.json({ error: &quot;Please log in&quot; }, { status: 401 });</span>
+<span class="">   const { id } = await params;</span>
+<span class="">   try {</span>
+<span class="">     const db = await getDb();</span>
+<span class="del">-    await db.update(bookings).set({ status: &quot;cancelled&quot; }).where(eq(bookings.id, Number(id)));</span>
+<span class="add">+    // Only matches a booking that belongs to this customer. Someone else's</span>
+<span class="add">+    // booking gets the same 404 as one that does not exist.</span>
+<span class="add">+    const updated = await db</span>
+<span class="add">+      .update(bookings)</span>
+<span class="add">+      .set({ status: &quot;cancelled&quot; })</span>
+<span class="add">+      .where(and(eq(bookings.id, Number(id)), eq(bookings.userId, userId)))</span>
+<span class="add">+      .returning({ id: bookings.id });</span>
+<span class="add">+    if (updated.length === 0) return Response.json({ error: &quot;Booking not found&quot; }, { status: 404 });</span>
+<span class="">   } catch {}</span>
+<span class="">   return Response.json({ ok: true });</span>
+<span class="file">src/app/api/bookings/route.ts</span>
+<span class="meta">--- a/src/app/api/bookings/route.ts</span>
+<span class="meta">+++ b/src/app/api/bookings/route.ts</span>
+<span class="hunk">@@ -3,8 +3,11 @@ import { getDb } from &quot;@/db&quot;;</span>
+<span class=""> import { bookings, services } from &quot;@/db/schema&quot;;</span>
+<span class=""> import { isOpen, toAppointmentDate } from &quot;@/lib/booking-time&quot;;</span>
+<span class="add">+import { getSessionUserId } from &quot;@/lib/session&quot;;</span>
+<span class=""> </span>
+<span class="del">-// Get bookings for a user</span>
+<span class="add">+// Bookings of the logged-in customer. The user comes from the signed session</span>
+<span class="add">+// cookie, never from the request: a ?userId= parameter is ignored.</span>
+<span class=""> export async function GET(req: Request) {</span>
+<span class="del">-  const userId = Number(new URL(req.url).searchParams.get(&quot;userId&quot;));</span>
+<span class="add">+  const userId = getSessionUserId(req);</span>
+<span class="add">+  if (!userId) return Response.json({ error: &quot;Please log in&quot; }, { status: 401 });</span>
+<span class="">   const db = await getDb();</span>
+<span class="">   const rows = await db</span>
+<span class="hunk">@@ -26,6 +29,8 @@ export async function GET(req: Request) {</span>
+<span class=""> }</span>
+<span class=""> </span>
+<span class="del">-// Create a booking</span>
+<span class="add">+// Create a booking for the logged-in customer</span>
+<span class=""> export async function POST(req: Request) {</span>
+<span class="add">+  const userId = getSessionUserId(req);</span>
+<span class="add">+  if (!userId) return Response.json({ error: &quot;Please log in&quot; }, { status: 401 });</span>
+<span class="">   const body = await req.json();</span>
+<span class="">   const db = await getDb();</span>
+<span class="hunk">@@ -44,4 +49,5 @@ export async function POST(req: Request) {</span>
+<span class="">       status: &quot;pending_deposit&quot;,</span>
+<span class="">       ...body,</span>
+<span class="add">+      userId,</span>
+<span class="">       startsAt,</span>
+<span class="">     })</span>
+<span class="file">src/app/book/page.tsx</span>
+<span class="meta">--- a/src/app/book/page.tsx</span>
+<span class="meta">+++ b/src/app/book/page.tsx</span>
+<span class="hunk">@@ -22,6 +22,7 @@ export default function BookPage() {</span>
+<span class="">       method: &quot;POST&quot;,</span>
+<span class="">       headers: { &quot;content-type&quot;: &quot;application/json&quot; },</span>
+<span class="del">-      body: JSON.stringify({ ...form, serviceId: Number(form.serviceId), userId: user.id }),</span>
+<span class="add">+      body: JSON.stringify({ ...form, serviceId: Number(form.serviceId) }),</span>
+<span class="">     });</span>
+<span class="add">+    if (res.status === 401) return router.push(&quot;/login&quot;);</span>
+<span class="">     const data = await res.json();</span>
+<span class="">     if (!res.ok) return setError(data.error ?? &quot;Could not book&quot;);</span>
+<span class="file">src/app/bookings/page.tsx</span>
+<span class="meta">--- a/src/app/bookings/page.tsx</span>
+<span class="meta">+++ b/src/app/bookings/page.tsx</span>
+<span class="hunk">@@ -21,5 +21,6 @@ export default function BookingsPage() {</span>
+<span class="">     setUser(u);</span>
+<span class="">     if (!u) return;</span>
+<span class="del">-    const res = await fetch(`/api/bookings?userId=${u.id}`);</span>
+<span class="add">+    const res = await fetch(&quot;/api/bookings&quot;);</span>
+<span class="add">+    if (res.status === 401) return setUser(null);</span>
+<span class="">     const data = await res.json();</span>
+<span class="">     setBookings(data.bookings ?? []);</span>
+<span class="hunk">@@ -31,9 +32,5 @@ export default function BookingsPage() {</span>
+<span class=""> </span>
+<span class="">   async function cancel(id: number) {</span>
+<span class="del">-    await fetch(`/api/bookings/${id}/cancel`, {</span>
+<span class="del">-      method: &quot;POST&quot;,</span></pre><p class="more">7 more lines in the commit.</p></details>
+  </article>
+
+  <article class="card" id="finding-3">
+    <header>
+      <span class="risk risk-critical">Critical</span>
+      <h2>A fake payment message could charge cards, and a repeated one charged twice</h2>
+    </header>
+    <p class="owner"><strong>What could happen to your business:</strong> The address that receives payment notifications accepted messages from anyone. Payment providers also resend notifications they are not sure arrived; each resend charged the customer's deposit again. Double charges mean refunds, chargeback fees and angry reviews.</p>
+    <div class="ba">
+      <div class="before"><div class="label">Before</div><div class="big">5 of 5 tests fail</div></div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <div class="after"><div class="label">After</div><div class="big">5 of 5 pass</div></div>
+    </div>
+    <table class="tests">
+      <thead><tr><th>Test (<code>tests/findings/03-payment-webhook.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
+      <tbody><tr><td>a request without the provider's signature is rejected and charges nothing</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a request signed with the wrong secret is rejected</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a replayed request older than 5 minutes is rejected</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>the same event delivered twice (provider retry) charges the deposit once</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>two checkouts for the same booking (double click) charge the deposit once</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr></tbody>
+    </table>
+    <p class="dev"><strong>For your developer:</strong> Webhook without signature verification or idempotency. <strong>Fix:</strong> HMAC signature and timestamp checked on the raw body; each event id recorded once (processed_events); the booking row is locked and only charged while it waits for a deposit; the charge carries an idempotency key.</p>
+    <p class="now"><strong>To do outside the code:</strong> Compare deposits in the provider dashboard with bookings; refund any duplicates.</p>
+    <details><summary>The fix: <code>Fix 3: verify webhook signatures and charge each deposit once</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/714d21017bcfadbba1fa858fd40e29616fc5a7b5">714d210</a>)</summary>
+      <pre class="diff"><span class="file">drizzle/0001_processed_events.sql</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/drizzle/0001_processed_events.sql</span>
+<span class="hunk">@@ -0,0 +1,4 @@</span>
+<span class="add">+CREATE TABLE &quot;processed_events&quot; (</span>
+<span class="add">+	&quot;id&quot; text PRIMARY KEY NOT NULL,</span>
+<span class="add">+	&quot;received_at&quot; timestamp with time zone DEFAULT now() NOT NULL</span>
+<span class="add">+);</span>
+<span class="file">src/app/api/payments/webhook/route.ts</span>
+<span class="meta">--- a/src/app/api/payments/webhook/route.ts</span>
+<span class="meta">+++ b/src/app/api/payments/webhook/route.ts</span>
+<span class="hunk">@@ -1,32 +1,51 @@</span>
+<span class=""> import { eq } from &quot;drizzle-orm&quot;;</span>
+<span class=""> import { getDb } from &quot;@/db&quot;;</span>
+<span class="del">-import { bookings, services } from &quot;@/db/schema&quot;;</span>
+<span class="add">+import { bookings, processedEvents, services } from &quot;@/db/schema&quot;;</span>
+<span class="add">+import { serverSecret } from &quot;@/lib/env&quot;;</span>
+<span class=""> import { charge } from &quot;@/lib/paydemo&quot;;</span>
+<span class="add">+import { verifyPayDemoSignature } from &quot;@/lib/webhook-signature&quot;;</span>
+<span class=""> </span>
+<span class=""> // PayDemo calls this after the customer saves a card on the checkout page.</span>
+<span class=""> // We then charge the deposit and confirm the booking.</span>
+<span class=""> export async function POST(req: Request) {</span>
+<span class="add">+  // 1. Only PayDemo can call this: check the signature on the raw body.</span>
+<span class="add">+  const raw = await req.text();</span>
+<span class="add">+  const secret = serverSecret(&quot;PAYDEMO_WEBHOOK_SECRET&quot;, &quot;whsec_demo_brightside&quot;);</span>
+<span class="add">+  if (!verifyPayDemoSignature(raw, req.headers.get(&quot;paydemo-signature&quot;), secret)) {</span>
+<span class="add">+    return Response.json({ error: &quot;Invalid signature&quot; }, { status: 400 });</span>
+<span class="add">+  }</span>
+<span class="add">+</span>
+<span class="">   try {</span>
+<span class="del">-    const event = await req.json();</span>
+<span class="add">+    const event = JSON.parse(raw);</span>
+<span class=""> </span>
+<span class="">     if (event.type === &quot;checkout.completed&quot;) {</span>
+<span class="del">-      const { bookingId, paymentMethod } = event.data;</span>
+<span class="add">+      const bookingId = Number(event.data.bookingId);</span>
+<span class="">       const db = await getDb();</span>
+<span class="del">-      const [row] = await db</span>
+<span class="del">-        .select({ booking: bookings, depositCents: services.depositCents })</span>
+<span class="del">-        .from(bookings)</span>
+<span class="del">-        .innerJoin(services, eq(bookings.serviceId, services.id))</span>
+<span class="del">-        .where(eq(bookings.id, bookingId));</span>
+<span class="del">-</span>
+<span class="del">-      const deposit = await charge({</span>
+<span class="del">-        amountCents: row.depositCents,</span>
+<span class="del">-        paymentMethod,</span>
+<span class="del">-        description: `Deposit for booking ${bookingId}`,</span>
+<span class="del">-      });</span>
+<span class=""> </span>
+<span class="del">-      await db</span>
+<span class="del">-        .update(bookings)</span>
+<span class="del">-        .set({ status: &quot;confirmed&quot;, depositChargeId: deposit.id })</span>
+<span class="del">-        .where(eq(bookings.id, bookingId));</span>
+<span class="add">+      await db.transaction(async (tx) =&gt; {</span>
+<span class="add">+        // 2. Providers deliver &quot;at least once&quot;. Record the event id; a repeat is a no-op.</span>
+<span class="add">+        const fresh = await tx.insert(processedEvents).values({ id: String(event.id) }).onConflictDoNothing().returning();</span>
+<span class="add">+        if (fresh.length === 0) return;</span>
+<span class="add">+</span>
+<span class="add">+        // 3. Lock the booking and only charge one that still waits for its deposit</span>
+<span class="add">+        //    (a second checkout for the same booking, or a cancelled one, is skipped).</span>
+<span class="add">+        const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for(&quot;update&quot;);</span>
+<span class="add">+        if (!booking || booking.status !== &quot;pending_deposit&quot;) return;</span>
+<span class="add">+        const [service] = await tx.select().from(services).where(eq(services.id, booking.serviceId));</span>
+<span class="add">+</span>
+<span class="add">+        // 4. The idempotency key makes the provider return the first charge if this</span>
+<span class="add">+        //    exact deposit is ever requested again.</span>
+<span class="add">+        const deposit = await charge({</span>
+<span class="add">+          amountCents: service.depositCents,</span>
+<span class="add">+          paymentMethod: event.data.paymentMethod,</span>
+<span class="add">+          description: `Deposit for booking ${bookingId}`,</span>
+<span class="add">+          idempotencyKey: `deposit-booking-${bookingId}`,</span>
+<span class="add">+        });</span>
+<span class="add">+</span>
+<span class="add">+        await tx</span>
+<span class="add">+          .update(bookings)</span>
+<span class="add">+          .set({ status: &quot;confirmed&quot;, depositChargeId: deposit.id })</span>
+<span class="add">+          .where(eq(bookings.id, bookingId));</span>
+<span class="add">+      });</span>
+<span class="">     }</span>
+<span class="">   } catch (err) {</span>
+<span class="file">src/db/schema.ts</span>
+<span class="meta">--- a/src/db/schema.ts</span>
+<span class="meta">+++ b/src/db/schema.ts</span>
+<span class="hunk">@@ -33,4 +33,10 @@ export const bookings = pgTable(&quot;bookings&quot;, {</span>
+<span class=""> });</span>
+<span class=""> </span>
+<span class="add">+// Webhook events already handled, so a retried delivery is a no-op.</span>
+<span class="add">+export const processedEvents = pgTable(&quot;processed_events&quot;, {</span>
+<span class="add">+  id: text(&quot;id&quot;).primaryKey(),</span></pre><p class="more">39 more lines in the commit.</p></details>
+  </article>
+
+  <article class="card" id="finding-5">
+    <header>
+      <span class="risk risk-high">High</span>
+      <h2>Appointments were saved at the wrong time</h2>
+    </header>
+    <p class="owner"><strong>What could happen to your business:</strong> The server reads the time the customer picked in its own time zone (UTC on most hosts), not the salon's. A 10:00 booking in Chicago becomes 4:00 AM. Staff and customers see different times, and opening hours are checked against the wrong clock.</p>
+    <div class="ba">
+      <div class="before"><div class="label">Before</div><div class="big">3 of 3 tests fail</div></div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <div class="after"><div class="label">After</div><div class="big">3 of 3 pass</div></div>
+    </div>
+    <table class="tests">
+      <thead><tr><th>Test (<code>tests/findings/05-time-zone.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
+      <tbody><tr><td>10:00 on Nov 10 is saved as 10:00 salon time (16:00 UTC), not 10:00 UTC</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>follows daylight saving time: 10:00 on Oct 30 is 15:00 UTC</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>opening hours are checked in salon time: 17:30 is accepted</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr></tbody>
+    </table>
+    <p class="dev"><strong>For your developer:</strong> new Date(`${date}T${time}`) uses the server time zone. <strong>Fix:</strong> Times are converted from America/Chicago with daylight saving handled; opening hours use the salon's clock; the app shows salon time.</p>
+    <p class="now"><strong>To do outside the code:</strong> Existing bookings were stored hours off. Shift them with a one-off script after checking a few by hand.</p>
+    <details><summary>The fix: <code>Fix 5: read appointment times in the salon's time zone</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/4ab47b2937d7c02748b4990bb82a069535f14061">4ab47b2</a>)</summary>
+      <pre class="diff"><span class="file">src/app/bookings/page.tsx</span>
+<span class="meta">--- a/src/app/bookings/page.tsx</span>
+<span class="meta">+++ b/src/app/bookings/page.tsx</span>
+<span class="hunk">@@ -1,4 +1,5 @@</span>
+<span class=""> &quot;use client&quot;;</span>
+<span class=""> import { useCallback, useEffect, useState } from &quot;react&quot;;</span>
+<span class="add">+import { formatSalonTime } from &quot;@/lib/booking-time&quot;;</span>
+<span class=""> import { PayDepositButton } from &quot;./pay-deposit-button&quot;;</span>
+<span class=""> </span>
+<span class="hunk">@@ -47,5 +48,5 @@ export default function BookingsPage() {</span>
+<span class="">             &lt;strong&gt;{b.service}&lt;/strong&gt;{&quot; &quot;}</span>
+<span class="">             &lt;span className={`badge ${b.status}`}&gt;{b.status.replace(&quot;_&quot;, &quot; &quot;)}&lt;/span&gt;</span>
+<span class="del">-            &lt;div className=&quot;muted&quot;&gt;{new Date(b.startsAt).toLocaleString()}&lt;/div&gt;</span>
+<span class="add">+            &lt;div className=&quot;muted&quot;&gt;{formatSalonTime(b.startsAt)} (salon time)&lt;/div&gt;</span>
+<span class="">             {b.notes &amp;&amp; &lt;div className=&quot;muted&quot;&gt;{b.notes}&lt;/div&gt;}</span>
+<span class="">           &lt;/div&gt;</span>
+<span class="file">src/lib/booking-time.ts</span>
+<span class="meta">--- a/src/lib/booking-time.ts</span>
+<span class="meta">+++ b/src/lib/booking-time.ts</span>
+<span class="hunk">@@ -1,14 +1,41 @@</span>
+<span class="add">+import { fromZonedTime } from &quot;date-fns-tz&quot;;</span>
+<span class=""> import { SALON } from &quot;./salon&quot;;</span>
+<span class=""> </span>
+<span class="del">-// Build the appointment date from the date and time the customer picked</span>
+<span class="add">+// The customer picks a date and time on the salon's wall clock. Servers usually</span>
+<span class="add">+// run in UTC, so `new Date(&quot;2026-11-10T10:00&quot;)` would mean 10:00 UTC (4:00 AM in</span>
+<span class="add">+// Chicago). Convert explicitly from the salon's time zone, daylight saving included.</span>
+<span class=""> export function toAppointmentDate(date: string, time: string): Date {</span>
+<span class="del">-  return new Date(`${date}T${time}`);</span>
+<span class="add">+  return fromZonedTime(`${date}T${time}`, SALON.timeZone);</span>
+<span class="add">+}</span>
+<span class="add">+</span>
+<span class="add">+/** Day of week (0 = Sunday) and hour of an instant, on the salon's wall clock. */</span>
+<span class="add">+export function salonClock(instant: Date): { day: number; hour: number } {</span>
+<span class="add">+  const parts = new Intl.DateTimeFormat(&quot;en-US&quot;, {</span>
+<span class="add">+    timeZone: SALON.timeZone,</span>
+<span class="add">+    weekday: &quot;short&quot;,</span>
+<span class="add">+    hour: &quot;numeric&quot;,</span>
+<span class="add">+    hourCycle: &quot;h23&quot;,</span>
+<span class="add">+  }).formatToParts(instant);</span>
+<span class="add">+  const weekday = parts.find((p) =&gt; p.type === &quot;weekday&quot;)!.value;</span>
+<span class="add">+  const hour = Number(parts.find((p) =&gt; p.type === &quot;hour&quot;)!.value);</span>
+<span class="add">+  return { day: [&quot;Sun&quot;, &quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;].indexOf(weekday), hour };</span>
+<span class=""> }</span>
+<span class=""> </span>
+<span class=""> // Check the salon is open at this time</span>
+<span class=""> export function isOpen(start: Date): boolean {</span>
+<span class="del">-  const day = start.getDay();</span>
+<span class="del">-  const hour = start.getHours();</span>
+<span class="add">+  const { day, hour } = salonClock(start);</span>
+<span class="">   if (SALON.closedDays.includes(day.toString())) return false;</span>
+<span class="">   return hour &gt;= SALON.openHour &amp;&amp; hour &lt; SALON.closeHour;</span>
+<span class=""> }</span>
+<span class="add">+</span>
+<span class="add">+/** How the app shows an appointment time: always in salon time. */</span>
+<span class="add">+export function formatSalonTime(instant: Date | string): string {</span>
+<span class="add">+  return new Date(instant).toLocaleString(&quot;en-US&quot;, {</span>
+<span class="add">+    timeZone: SALON.timeZone,</span>
+<span class="add">+    weekday: &quot;short&quot;,</span>
+<span class="add">+    month: &quot;short&quot;,</span>
+<span class="add">+    day: &quot;numeric&quot;,</span>
+<span class="add">+    hour: &quot;numeric&quot;,</span>
+<span class="add">+    minute: &quot;2-digit&quot;,</span>
+<span class="add">+  });</span>
+<span class="add">+}</span>
+<span class=""> </span></pre></details>
+  </article>
+
+  <article class="card" id="finding-6">
+    <header>
+      <span class="risk risk-high">High</span>
+      <h2>Customers could set their own price</h2>
+    </header>
+    <p class="owner"><strong>What could happen to your business:</strong> The booking form saved whatever the browser sent. Anyone with the browser's developer tools could book a $55 haircut for $0 or mark it as already confirmed. Malformed input crashed the request instead of showing a message.</p>
+    <div class="ba">
+      <div class="before"><div class="label">Before</div><div class="big">5 of 5 tests fail</div></div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <div class="after"><div class="label">After</div><div class="big">5 of 5 pass</div></div>
+    </div>
+    <table class="tests">
+      <thead><tr><th>Test (<code>tests/findings/06-input-validation.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
+      <tbody><tr><td>a customer cannot book a $55 haircut for $0 or mark it as already confirmed</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a missing service gets a clear 400 with the field name, not a 500</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a malformed date gets a 400 that names the field</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a service that does not exist gets a 400, not a 500</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>notes longer than 1,000 characters are refused</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr></tbody>
+    </table>
+    <p class="dev"><strong>For your developer:</strong> Mass assignment (...body into insert) and no input validation. <strong>Fix:</strong> zod schemas on every request body (unknown keys dropped); a 400 that names the bad field; price and status set by the server.</p>
+    <p class="now"><strong>To do outside the code:</strong> Look for bookings whose price differs from the service price.</p>
+    <details><summary>The fix: <code>Fix 6: validate every request body and let the server set prices</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/ca0836efb24c5fc99f1288248d0e5b8e86e17ec0">ca0836e</a>)</summary>
+      <pre class="diff"><span class="file">src/app/api/auth/login/route.ts</span>
+<span class="meta">--- a/src/app/api/auth/login/route.ts</span>
+<span class="meta">+++ b/src/app/api/auth/login/route.ts</span>
+<span class="hunk">@@ -3,7 +3,10 @@ import { getDb } from &quot;@/db&quot;;</span>
+<span class=""> import { users } from &quot;@/db/schema&quot;;</span>
+<span class=""> import { sessionCookie, verifyPassword } from &quot;@/lib/session&quot;;</span>
+<span class="add">+import { LoginInput, parseBody } from &quot;@/lib/validation&quot;;</span>
+<span class=""> </span>
+<span class=""> export async function POST(req: Request) {</span>
+<span class="del">-  const { email, password } = await req.json();</span>
+<span class="add">+  const { data, error } = await parseBody(req, LoginInput);</span>
+<span class="add">+  if (error) return error;</span>
+<span class="add">+  const { email, password } = data;</span>
+<span class="">   const db = await getDb();</span>
+<span class=""> </span>
+<span class="hunk">@@ -11,5 +14,5 @@ export async function POST(req: Request) {</span>
+<span class="">     .select()</span>
+<span class="">     .from(users)</span>
+<span class="del">-    .where(eq(users.email, String(email ?? &quot;&quot;).trim().toLowerCase()));</span>
+<span class="add">+    .where(eq(users.email, email.trim().toLowerCase()));</span>
+<span class="">   if (!user || !(await verifyPassword(password, user.passwordHash))) {</span>
+<span class="">     return Response.json({ error: &quot;Invalid email or password&quot; }, { status: 401 });</span>
+<span class="file">src/app/api/auth/signup/route.ts</span>
+<span class="meta">--- a/src/app/api/auth/signup/route.ts</span>
+<span class="meta">+++ b/src/app/api/auth/signup/route.ts</span>
+<span class="hunk">@@ -4,10 +4,12 @@ import { users } from &quot;@/db/schema&quot;;</span>
+<span class=""> import { isUniqueViolation } from &quot;@/lib/db-errors&quot;;</span>
+<span class=""> import { hashPassword, sessionCookie } from &quot;@/lib/session&quot;;</span>
+<span class="add">+import { parseBody, SignupInput } from &quot;@/lib/validation&quot;;</span>
+<span class=""> </span>
+<span class=""> const taken = () =&gt; Response.json({ error: &quot;Email already registered&quot; }, { status: 409 });</span>
+<span class=""> </span>
+<span class=""> export async function POST(req: Request) {</span>
+<span class="del">-  const body = await req.json();</span>
+<span class="del">-  const email = String(body.email ?? &quot;&quot;).trim().toLowerCase();</span>
+<span class="add">+  const { data: body, error } = await parseBody(req, SignupInput);</span>
+<span class="add">+  if (error) return error;</span>
+<span class="add">+  const email = body.email.trim().toLowerCase();</span>
+<span class="">   const db = await getDb();</span>
+<span class=""> </span>
+<span class="file">src/app/api/bookings/route.ts</span>
+<span class="meta">--- a/src/app/api/bookings/route.ts</span>
+<span class="meta">+++ b/src/app/api/bookings/route.ts</span>
+<span class="hunk">@@ -4,4 +4,5 @@ import { bookings, services } from &quot;@/db/schema&quot;;</span>
+<span class=""> import { isOpen, toAppointmentDate } from &quot;@/lib/booking-time&quot;;</span>
+<span class=""> import { getSessionUserId } from &quot;@/lib/session&quot;;</span>
+<span class="add">+import { BookingInput, parseBody } from &quot;@/lib/validation&quot;;</span>
+<span class=""> </span>
+<span class=""> // Bookings of the logged-in customer. The user comes from the signed session</span>
+<span class="hunk">@@ -33,22 +34,30 @@ export async function POST(req: Request) {</span>
+<span class="">   const userId = getSessionUserId(req);</span>
+<span class="">   if (!userId) return Response.json({ error: &quot;Please log in&quot; }, { status: 401 });</span>
+<span class="del">-  const body = await req.json();</span>
+<span class="del">-  const db = await getDb();</span>
+<span class=""> </span>
+<span class="del">-  const [service] = await db.select().from(services).where(eq(services.id, body.serviceId));</span>
+<span class="del">-  const startsAt = toAppointmentDate(body.date, body.time);</span>
+<span class="add">+  const { data: input, error } = await parseBody(req, BookingInput);</span>
+<span class="add">+  if (error) return error;</span>
+<span class="add">+</span>
+<span class="add">+  const db = await getDb();</span>
+<span class="add">+  const [service] = await db.select().from(services).where(eq(services.id, input.serviceId));</span>
+<span class="add">+  if (!service) {</span>
+<span class="add">+    return Response.json({ error: &quot;Invalid input&quot;, fieldErrors: { serviceId: [&quot;Unknown service&quot;] } }, { status: 400 });</span>
+<span class="add">+  }</span>
+<span class=""> </span>
+<span class="add">+  const startsAt = toAppointmentDate(input.date, input.time);</span>
+<span class="">   if (!isOpen(startsAt)) {</span>
+<span class="">     return Response.json({ error: &quot;The salon is closed at that time&quot; }, { status: 400 });</span>
+<span class="">   }</span>
+<span class=""> </span>
+<span class="add">+  // Every column is set explicitly: price and status come from the server,</span>
+<span class="add">+  // never from the request body.</span>
+<span class="">   const [booking] = await db</span>
+<span class="">     .insert(bookings)</span>
+<span class="">     .values({</span>
+<span class="del">-      priceCents: service?.priceCents,</span>
+<span class="del">-      status: &quot;pending_deposit&quot;,</span>
+<span class="del">-      ...body,</span>
+<span class="">       userId,</span>
+<span class="add">+      serviceId: service.id,</span>
+<span class="">       startsAt,</span>
+<span class="add">+      notes: input.notes || null,</span>
+<span class="add">+      priceCents: service.priceCents,</span>
+<span class="add">+      status: &quot;pending_deposit&quot;,</span>
+<span class="">     })</span>
+<span class="">     .returning();</span>
+<span class="file">src/app/book/page.tsx</span>
+<span class="meta">--- a/src/app/book/page.tsx</span>
+<span class="meta">+++ b/src/app/book/page.tsx</span></pre><p class="more">79 more lines in the commit.</p></details>
+  </article>
+
+  <article class="card" id="finding-7">
+    <header>
+      <span class="risk risk-high">High</span>
+      <h2>Unlimited password guessing</h2>
+    </header>
+    <p class="owner"><strong>What could happen to your business:</strong> A script could try passwords against a customer's account as fast as the server answers. Reused or weak passwords fall quickly.</p>
+    <div class="ba">
+      <div class="before"><div class="label">Before</div><div class="big">2 of 3 tests fail</div></div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <div class="after"><div class="label">After</div><div class="big">3 of 3 pass</div></div>
+    </div>
+    <table class="tests">
+      <thead><tr><th>Test (<code>tests/findings/07-login-rate-limit.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
+      <tbody><tr><td>after 5 wrong passwords, login is paused for that account, even with the right password</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>the limit is per account, whatever the letter case</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a couple of typos followed by the right password still logs in</td><td><span class="ok">pass</span></td><td><span class="ok">pass</span></td></tr></tbody>
+    </table>
+    <p class="dev"><strong>For your developer:</strong> No rate limit on the credentials login. <strong>Fix:</strong> Attempts recorded per account; after 5 failures in 15 minutes, login answers 429 with Retry-After, checked before the password.</p>
+    
+    <details><summary>The fix: <code>Fix 7: pause login after repeated wrong passwords</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/a5b4429712e0305784f73c350a7ca78a0e0135fa">a5b4429</a>)</summary>
+      <pre class="diff"><span class="file">drizzle/0003_login_attempts.sql</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/drizzle/0003_login_attempts.sql</span>
+<span class="hunk">@@ -0,0 +1,9 @@</span>
+<span class="add">+CREATE TABLE &quot;login_attempts&quot; (</span>
+<span class="add">+	&quot;id&quot; serial PRIMARY KEY NOT NULL,</span>
+<span class="add">+	&quot;email&quot; text NOT NULL,</span>
+<span class="add">+	&quot;ip&quot; text,</span>
+<span class="add">+	&quot;succeeded&quot; boolean NOT NULL,</span>
+<span class="add">+	&quot;created_at&quot; timestamp with time zone DEFAULT now() NOT NULL</span>
+<span class="add">+);</span>
+<span class="add">+--&gt; statement-breakpoint</span>
+<span class="add">+CREATE INDEX &quot;login_attempts_email_created_idx&quot; ON &quot;login_attempts&quot; USING btree (&quot;email&quot;,&quot;created_at&quot;);</span>
+<span class="">\ No newline at end of file</span>
+<span class="file">src/app/api/auth/login/route.ts</span>
+<span class="meta">--- a/src/app/api/auth/login/route.ts</span>
+<span class="meta">+++ b/src/app/api/auth/login/route.ts</span>
+<span class="hunk">@@ -2,4 +2,5 @@ import { eq } from &quot;drizzle-orm&quot;;</span>
+<span class=""> import { getDb } from &quot;@/db&quot;;</span>
+<span class=""> import { users } from &quot;@/db/schema&quot;;</span>
+<span class="add">+import { recordLoginAttempt, secondsUntilLoginAllowed } from &quot;@/lib/login-limit&quot;;</span>
+<span class=""> import { sessionCookie, verifyPassword } from &quot;@/lib/session&quot;;</span>
+<span class=""> import { LoginInput, parseBody } from &quot;@/lib/validation&quot;;</span>
+<span class="hunk">@@ -8,12 +9,21 @@ export async function POST(req: Request) {</span>
+<span class="">   const { data, error } = await parseBody(req, LoginInput);</span>
+<span class="">   if (error) return error;</span>
+<span class="del">-  const { email, password } = data;</span>
+<span class="add">+  const email = data.email.trim().toLowerCase();</span>
+<span class="add">+  const ip = req.headers.get(&quot;x-forwarded-for&quot;)?.split(&quot;,&quot;)[0].trim() || null;</span>
+<span class="">   const db = await getDb();</span>
+<span class=""> </span>
+<span class="del">-  const [user] = await db</span>
+<span class="del">-    .select()</span>
+<span class="del">-    .from(users)</span>
+<span class="del">-    .where(eq(users.email, email.trim().toLowerCase()));</span>
+<span class="del">-  if (!user || !(await verifyPassword(password, user.passwordHash))) {</span>
+<span class="add">+  // Checked before the password, so a paused account gives nothing away.</span>
+<span class="add">+  const wait = await secondsUntilLoginAllowed(db, email);</span>
+<span class="add">+  if (wait &gt; 0) {</span>
+<span class="add">+    return Response.json(</span>
+<span class="add">+      { error: &quot;Too many attempts. Try again in a few minutes.&quot; },</span>
+<span class="add">+      { status: 429, headers: { &quot;Retry-After&quot;: String(wait) } },</span>
+<span class="add">+    );</span>
+<span class="add">+  }</span>
+<span class="add">+</span>
+<span class="add">+  const [user] = await db.select().from(users).where(eq(users.email, email));</span>
+<span class="add">+  const ok = !!user &amp;&amp; (await verifyPassword(data.password, user.passwordHash));</span>
+<span class="add">+  await recordLoginAttempt(db, email, ip, ok);</span>
+<span class="add">+  if (!ok) {</span>
+<span class="">     return Response.json({ error: &quot;Invalid email or password&quot; }, { status: 401 });</span>
+<span class="">   }</span>
+<span class="file">src/db/schema.ts</span>
+<span class="meta">--- a/src/db/schema.ts</span>
+<span class="meta">+++ b/src/db/schema.ts</span>
+<span class="hunk">@@ -1,4 +1,4 @@</span>
+<span class=""> import { sql } from &quot;drizzle-orm&quot;;</span>
+<span class="del">-import { integer, pgTable, serial, text, timestamp, uniqueIndex } from &quot;drizzle-orm/pg-core&quot;;</span>
+<span class="add">+import { boolean, index, integer, pgTable, serial, text, timestamp, uniqueIndex } from &quot;drizzle-orm/pg-core&quot;;</span>
+<span class=""> </span>
+<span class=""> export const users = pgTable(</span>
+<span class="hunk">@@ -45,4 +45,17 @@ export const processedEvents = pgTable(&quot;processed_events&quot;, {</span>
+<span class=""> });</span>
+<span class=""> </span>
+<span class="add">+// Login attempts per account, used to pause password guessing.</span>
+<span class="add">+export const loginAttempts = pgTable(</span>
+<span class="add">+  &quot;login_attempts&quot;,</span>
+<span class="add">+  {</span>
+<span class="add">+    id: serial(&quot;id&quot;).primaryKey(),</span>
+<span class="add">+    email: text(&quot;email&quot;).notNull(),</span>
+<span class="add">+    ip: text(&quot;ip&quot;),</span>
+<span class="add">+    succeeded: boolean(&quot;succeeded&quot;).notNull(),</span>
+<span class="add">+    createdAt: timestamp(&quot;created_at&quot;, { withTimezone: true }).notNull().defaultNow(),</span>
+<span class="add">+  },</span>
+<span class="add">+  (t) =&gt; [index(&quot;login_attempts_email_created_idx&quot;).on(t.email, t.createdAt)],</span>
+<span class="add">+);</span>
+<span class="add">+</span>
+<span class=""> export type User = typeof users.$inferSelect;</span>
+<span class=""> export type Service = typeof services.$inferSelect;</span>
+<span class="file">src/lib/login-limit.ts</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/src/lib/login-limit.ts</span>
+<span class="hunk">@@ -0,0 +1,32 @@</span>
+<span class="add">+import &quot;server-only&quot;;</span>
+<span class="add">+import { and, desc, eq, gt } from &quot;drizzle-orm&quot;;</span>
+<span class="add">+import type { Db } from &quot;@/db&quot;;</span>
+<span class="add">+import { loginAttempts } from &quot;@/db/schema&quot;;</span>
+<span class="add">+</span>
+<span class="add">+export const MAX_FAILURES = 5;</span>
+<span class="add">+export const WINDOW_MS = 15 * 60 * 1000;</span>
+<span class="add">+</span></pre><p class="more">25 more lines in the commit.</p></details>
+  </article>
+
+  <article class="card" id="finding-8">
+    <header>
+      <span class="risk risk-medium">Medium</span>
+      <h2>Errors were hidden instead of handled</h2>
+    </header>
+    <p class="owner"><strong>What could happen to your business:</strong> The build was told to ignore code errors, and one of them was a real bug: the salon took bookings on Sundays, when it is closed. When a deposit charge failed, the app told the payment provider all was fine, so the charge was never retried and the booking stayed unpaid.</p>
+    <div class="ba">
+      <div class="before"><div class="label">Before</div><div class="big">4 of 4 tests fail</div></div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <div class="after"><div class="label">After</div><div class="big">4 of 4 pass</div></div>
+    </div>
+    <table class="tests">
+      <thead><tr><th>Test (<code>tests/findings/08-hidden-errors.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
+      <tbody><tr><td>the production build does not skip type errors</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>the code type-checks</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>the salon is closed on Sundays: a Sunday booking is refused (the bug the type error hid)</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>when the deposit charge fails, the webhook answers 500 so the provider retries</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr></tbody>
+    </table>
+    <p class="dev"><strong>For your developer:</strong> ignoreBuildErrors: true and catch {} in the webhook and cancel routes. <strong>Fix:</strong> Type checking is back in the build and the Sunday bug is fixed. The webhook answers 500 on failure so the provider retries (safe since Fix 3). Cancel no longer reports success when the update fails.</p>
+    <p class="now"><strong>To do outside the code:</strong> Check for Sunday bookings and for bookings stuck in 'pending deposit'.</p>
+    <details><summary>The fix: <code>Fix 8: stop hiding errors</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/cd266010e46638085575e18b261654e1cfd5abfc">cd26601</a>)</summary>
+      <pre class="diff"><span class="file">next.config.ts</span>
+<span class="meta">--- a/next.config.ts</span>
+<span class="meta">+++ b/next.config.ts</span>
+<span class="hunk">@@ -3,8 +3,5 @@ import type { NextConfig } from &quot;next&quot;;</span>
+<span class=""> const nextConfig: NextConfig = {</span>
+<span class="">   serverExternalPackages: [&quot;@electric-sql/pglite&quot;],</span>
+<span class="del">-  typescript: {</span>
+<span class="del">-    // build was failing on some type errors, skip them for now</span>
+<span class="del">-    ignoreBuildErrors: true,</span>
+<span class="del">-  },</span>
+<span class="add">+  // No `typescript.ignoreBuildErrors`: a type error fails the build.</span>
+<span class=""> };</span>
+<span class=""> </span>
+<span class="file">src/app/api/bookings/[id]/cancel/route.ts</span>
+<span class="meta">--- a/src/app/api/bookings/[id]/cancel/route.ts</span>
+<span class="meta">+++ b/src/app/api/bookings/[id]/cancel/route.ts</span>
+<span class="hunk">@@ -9,15 +9,15 @@ export async function POST(req: Request, { params }: { params: Promise&lt;{ id: str</span>
+<span class="">   if (!userId) return Response.json({ error: &quot;Please log in&quot; }, { status: 401 });</span>
+<span class="">   const { id } = await params;</span>
+<span class="del">-  try {</span>
+<span class="del">-    const db = await getDb();</span>
+<span class="del">-    // Only matches a booking that belongs to this customer. Someone else's</span>
+<span class="del">-    // booking gets the same 404 as one that does not exist.</span>
+<span class="del">-    const updated = await db</span>
+<span class="del">-      .update(bookings)</span>
+<span class="del">-      .set({ status: &quot;cancelled&quot; })</span>
+<span class="del">-      .where(and(eq(bookings.id, Number(id)), eq(bookings.userId, userId)))</span>
+<span class="del">-      .returning({ id: bookings.id });</span>
+<span class="del">-    if (updated.length === 0) return Response.json({ error: &quot;Booking not found&quot; }, { status: 404 });</span>
+<span class="del">-  } catch {}</span>
+<span class="add">+  // No try/catch: if the update fails, the customer gets an error (500), not a</span>
+<span class="add">+  // &quot;cancelled&quot; message for a booking that is still active.</span>
+<span class="add">+  const db = await getDb();</span>
+<span class="add">+  // Only matches a booking that belongs to this customer. Someone else's</span>
+<span class="add">+  // booking gets the same 404 as one that does not exist.</span>
+<span class="add">+  const updated = await db</span>
+<span class="add">+    .update(bookings)</span>
+<span class="add">+    .set({ status: &quot;cancelled&quot; })</span>
+<span class="add">+    .where(and(eq(bookings.id, Number(id)), eq(bookings.userId, userId)))</span>
+<span class="add">+    .returning({ id: bookings.id });</span>
+<span class="add">+  if (updated.length === 0) return Response.json({ error: &quot;Booking not found&quot; }, { status: 404 });</span>
+<span class="">   return Response.json({ ok: true });</span>
+<span class=""> }</span>
+<span class="file">src/app/api/payments/webhook/route.ts</span>
+<span class="meta">--- a/src/app/api/payments/webhook/route.ts</span>
+<span class="meta">+++ b/src/app/api/payments/webhook/route.ts</span>
+<span class="hunk">@@ -16,7 +16,12 @@ export async function POST(req: Request) {</span>
+<span class="">   }</span>
+<span class=""> </span>
+<span class="add">+  let event;</span>
+<span class="">   try {</span>
+<span class="del">-    const event = JSON.parse(raw);</span>
+<span class="add">+    event = JSON.parse(raw);</span>
+<span class="add">+  } catch {</span>
+<span class="add">+    return Response.json({ error: &quot;Invalid JSON&quot; }, { status: 400 });</span>
+<span class="add">+  }</span>
+<span class=""> </span>
+<span class="add">+  try {</span>
+<span class="">     if (event.type === &quot;checkout.completed&quot;) {</span>
+<span class="">       const bookingId = Number(event.data.bookingId);</span>
+<span class="hunk">@@ -50,5 +55,8 @@ export async function POST(req: Request) {</span>
+<span class="">     }</span>
+<span class="">   } catch (err) {</span>
+<span class="del">-    // ignore</span>
+<span class="add">+    // Answer 500 so PayDemo retries later. Nothing was recorded (the transaction</span>
+<span class="add">+    // rolled back) and the charge has an idempotency key, so a retry is safe.</span>
+<span class="add">+    console.error(&quot;PayDemo webhook failed&quot;, { eventId: event?.id, error: String(err) });</span>
+<span class="add">+    return Response.json({ error: &quot;Processing failed, please retry&quot; }, { status: 500 });</span>
+<span class="">   }</span>
+<span class=""> </span>
+<span class="file">src/lib/booking-time.ts</span>
+<span class="meta">--- a/src/lib/booking-time.ts</span>
+<span class="meta">+++ b/src/lib/booking-time.ts</span>
+<span class="hunk">@@ -25,5 +25,5 @@ export function salonClock(instant: Date): { day: number; hour: number } {</span>
+<span class=""> export function isOpen(start: Date): boolean {</span>
+<span class="">   const { day, hour } = salonClock(start);</span>
+<span class="del">-  if (SALON.closedDays.includes(day.toString())) return false;</span>
+<span class="add">+  if (SALON.closedDays.includes(day)) return false;</span>
+<span class="">   return hour &gt;= SALON.openHour &amp;&amp; hour &lt; SALON.closeHour;</span>
+<span class=""> }</span>
+<span class=""> </span></pre></details>
+  </article>
+
+  <article class="card" id="finding-4">
+    <header>
+      <span class="risk risk-medium">Medium</span>
+      <h2>One person could end up with two accounts</h2>
+    </header>
+    <p class="owner"><strong>What could happen to your business:</strong> Two sign-ups at the same moment, or the same email typed with a capital letter, created two accounts. Bookings split between them and password resets go to the wrong one.</p>
+    <div class="ba">
+      <div class="before"><div class="label">Before</div><div class="big">2 of 2 tests fail</div></div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <div class="after"><div class="label">After</div><div class="big">2 of 2 pass</div></div>
+    </div>
+    <table class="tests">
+      <thead><tr><th>Test (<code>tests/findings/04-duplicate-signup.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
+      <tbody><tr><td>two sign-ups with the same email at the same moment create one account</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Dana@Example.com and dana@example.com are the same account</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr></tbody>
+    </table>
+    <p class="dev"><strong>For your developer:</strong> Check-then-insert race; no unique index; emails not normalized. <strong>Fix:</strong> Emails stored lower-case; a unique index on lower(email) decides; the losing request gets 409.</p>
+    <p class="now"><strong>To do outside the code:</strong> The migration stops if duplicates already exist. Merge those accounts first.</p>
+    <details><summary>The fix: <code>Fix 4: one account per email, enforced by the database</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/86b16aae09fec7ae2ef8ce7c6810c81b28d41906">86b16aa</a>)</summary>
+      <pre class="diff"><span class="file">drizzle/0002_unique_email.sql</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/drizzle/0002_unique_email.sql</span>
+<span class="hunk">@@ -0,0 +1,4 @@</span>
+<span class="add">+-- Store emails lower-case. If two accounts already share an email, the index below</span>
+<span class="add">+-- fails on purpose: merge those accounts first (see report/findings.md, finding 4).</span>
+<span class="add">+UPDATE &quot;users&quot; SET &quot;email&quot; = lower(trim(&quot;email&quot;));--&gt; statement-breakpoint</span>
+<span class="add">+CREATE UNIQUE INDEX &quot;users_email_lower_unique&quot; ON &quot;users&quot; USING btree (lower(&quot;email&quot;));</span>
+<span class="">\ No newline at end of file</span>
+<span class="file">src/app/api/auth/login/route.ts</span>
+<span class="meta">--- a/src/app/api/auth/login/route.ts</span>
+<span class="meta">+++ b/src/app/api/auth/login/route.ts</span>
+<span class="hunk">@@ -8,5 +8,8 @@ export async function POST(req: Request) {</span>
+<span class="">   const db = await getDb();</span>
+<span class=""> </span>
+<span class="del">-  const [user] = await db.select().from(users).where(eq(users.email, email));</span>
+<span class="add">+  const [user] = await db</span>
+<span class="add">+    .select()</span>
+<span class="add">+    .from(users)</span>
+<span class="add">+    .where(eq(users.email, String(email ?? &quot;&quot;).trim().toLowerCase()));</span>
+<span class="">   if (!user || !(await verifyPassword(password, user.passwordHash))) {</span>
+<span class="">     return Response.json({ error: &quot;Invalid email or password&quot; }, { status: 401 });</span>
+<span class="file">src/app/api/auth/signup/route.ts</span>
+<span class="meta">--- a/src/app/api/auth/signup/route.ts</span>
+<span class="meta">+++ b/src/app/api/auth/signup/route.ts</span>
+<span class="hunk">@@ -2,25 +2,31 @@ import { eq } from &quot;drizzle-orm&quot;;</span>
+<span class=""> import { getDb } from &quot;@/db&quot;;</span>
+<span class=""> import { users } from &quot;@/db/schema&quot;;</span>
+<span class="add">+import { isUniqueViolation } from &quot;@/lib/db-errors&quot;;</span>
+<span class=""> import { hashPassword, sessionCookie } from &quot;@/lib/session&quot;;</span>
+<span class=""> </span>
+<span class="add">+const taken = () =&gt; Response.json({ error: &quot;Email already registered&quot; }, { status: 409 });</span>
+<span class="add">+</span>
+<span class=""> export async function POST(req: Request) {</span>
+<span class="">   const body = await req.json();</span>
+<span class="add">+  const email = String(body.email ?? &quot;&quot;).trim().toLowerCase();</span>
+<span class="">   const db = await getDb();</span>
+<span class=""> </span>
+<span class="del">-  // Check if user already exists</span>
+<span class="del">-  const existing = await db.select().from(users).where(eq(users.email, body.email));</span>
+<span class="del">-  if (existing.length &gt; 0) {</span>
+<span class="del">-    return Response.json({ error: &quot;Email already registered&quot; }, { status: 400 });</span>
+<span class="del">-  }</span>
+<span class="add">+  // Friendly early answer; the unique index below is what actually guarantees it.</span>
+<span class="add">+  const existing = await db.select({ id: users.id }).from(users).where(eq(users.email, email));</span>
+<span class="add">+  if (existing.length &gt; 0) return taken();</span>
+<span class=""> </span>
+<span class="">   const passwordHash = await hashPassword(body.password);</span>
+<span class="del">-  const [user] = await db</span>
+<span class="del">-    .insert(users)</span>
+<span class="del">-    .values({ email: body.email, name: body.name, passwordHash })</span>
+<span class="del">-    .returning();</span>
+<span class="add">+  let user;</span>
+<span class="add">+  try {</span>
+<span class="add">+    [user] = await db.insert(users).values({ email, name: body.name, passwordHash }).returning();</span>
+<span class="add">+  } catch (err) {</span>
+<span class="add">+    // Two sign-ups raced past the check above: the second insert hits the index.</span>
+<span class="add">+    if (isUniqueViolation(err)) return taken();</span>
+<span class="add">+    throw err;</span>
+<span class="add">+  }</span>
+<span class=""> </span>
+<span class="">   return Response.json(</span>
+<span class="">     { user: { id: user.id, email: user.email, name: user.name } },</span>
+<span class="del">-    { headers: { &quot;Set-Cookie&quot;: sessionCookie(user.id) } },</span>
+<span class="add">+    { status: 201, headers: { &quot;Set-Cookie&quot;: sessionCookie(user.id) } },</span>
+<span class="">   );</span>
+<span class=""> }</span>
+<span class="file">src/db/schema.ts</span>
+<span class="meta">--- a/src/db/schema.ts</span>
+<span class="meta">+++ b/src/db/schema.ts</span>
+<span class="hunk">@@ -1,11 +1,17 @@</span>
+<span class="del">-import { integer, pgTable, serial, text, timestamp } from &quot;drizzle-orm/pg-core&quot;;</span>
+<span class="add">+import { sql } from &quot;drizzle-orm&quot;;</span>
+<span class="add">+import { integer, pgTable, serial, text, timestamp, uniqueIndex } from &quot;drizzle-orm/pg-core&quot;;</span>
+<span class=""> </span>
+<span class="del">-export const users = pgTable(&quot;users&quot;, {</span>
+<span class="del">-  id: serial(&quot;id&quot;).primaryKey(),</span>
+<span class="del">-  email: text(&quot;email&quot;).notNull(),</span>
+<span class="del">-  name: text(&quot;name&quot;),</span>
+<span class="del">-  passwordHash: text(&quot;password_hash&quot;).notNull(),</span>
+<span class="del">-  createdAt: timestamp(&quot;created_at&quot;, { withTimezone: true }).notNull().defaultNow(),</span>
+<span class="del">-});</span>
+<span class="add">+export const users = pgTable(</span>
+<span class="add">+  &quot;users&quot;,</span>
+<span class="add">+  {</span>
+<span class="add">+    id: serial(&quot;id&quot;).primaryKey(),</span>
+<span class="add">+    email: text(&quot;email&quot;).notNull(), // stored lower-case</span>
+<span class="add">+    name: text(&quot;name&quot;),</span>
+<span class="add">+    passwordHash: text(&quot;password_hash&quot;).notNull(),</span>
+<span class="add">+    createdAt: timestamp(&quot;created_at&quot;, { withTimezone: true }).notNull().defaultNow(),</span></pre><p class="more">18 more lines in the commit.</p></details>
+  </article>
+  <article class="card">
+    <header><h2>Found while fixing</h2></header>
+    <ul><li><strong>Session signing key had a hard-coded fallback</strong> (Critical if deployed without SESSION_SECRET). Required in production, like the other secrets. Test <code>tests/session.test.ts</code>: 1 of 2 fail before, 2 of 2 pass after.</li></ul>
+  </article>
+  <footer>
+    Generated by <code>scripts/build-docs.mjs</code> from <code>report/findings.json</code>,
+    <code>docs/evidence/results.json</code> and the git history.
+    Full report: <a href="https://github.com/tales-andre/ai-built-app-rescue/blob/main/report/findings.md">report/findings.md</a> &middot;
+    Code: <a href="https://github.com/tales-andre/ai-built-app-rescue">github.com/tales-andre/ai-built-app-rescue</a>
+  </footer>
+</div>
+</body>
+</html>
