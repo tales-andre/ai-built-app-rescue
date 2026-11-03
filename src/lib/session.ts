@@ -1,14 +1,17 @@
 import "server-only";
 import { createHmac, randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
+import { serverSecret } from "./env";
 
 const scrypt = promisify(scryptCb) as (pw: string, salt: string, len: number) => Promise<Buffer>;
 
 const SESSION_COOKIE = "session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
+// Anyone who knows this value can sign a session cookie for any user, so a
+// production server refuses to start a session without its own SESSION_SECRET.
 function secret() {
-  return process.env.SESSION_SECRET ?? "dev-only-session-secret-change-me";
+  return serverSecret("SESSION_SECRET", "dev-only-session-secret-change-me");
 }
 
 export async function hashPassword(password: string): Promise<string> {
