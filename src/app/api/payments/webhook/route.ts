@@ -15,9 +15,14 @@ export async function POST(req: Request) {
     return Response.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  let event;
   try {
-    const event = JSON.parse(raw);
+    event = JSON.parse(raw);
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
+  try {
     if (event.type === "checkout.completed") {
       const bookingId = Number(event.data.bookingId);
       const db = await getDb();
@@ -49,7 +54,10 @@ export async function POST(req: Request) {
       });
     }
   } catch (err) {
-    // ignore
+    // Answer 500 so PayDemo retries later. Nothing was recorded (the transaction
+    // rolled back) and the charge has an idempotency key, so a retry is safe.
+    console.error("PayDemo webhook failed", { eventId: event?.id, error: String(err) });
+    return Response.json({ error: "Processing failed, please retry" }, { status: 500 });
   }
 
   return Response.json({ received: true });

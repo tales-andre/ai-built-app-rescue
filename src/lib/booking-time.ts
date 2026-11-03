@@ -24,7 +24,7 @@ export function salonClock(instant: Date): { day: number; hour: number } {
 // Check the salon is open at this time
 export function isOpen(start: Date): boolean {
   const { day, hour } = salonClock(start);
-  if (SALON.closedDays.includes(day.toString())) return false;
+  if (SALON.closedDays.includes(day)) return false;
   return hour >= SALON.openHour && hour < SALON.closeHour;
 }
 
