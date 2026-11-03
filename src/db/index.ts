@@ -5,6 +5,7 @@ import type { PgliteDatabase } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { drizzle as drizzleNodePg } from "drizzle-orm/node-postgres";
 import { migrate as migrateNodePg } from "drizzle-orm/node-postgres/migrator";
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import * as schema from "./schema";
 
@@ -28,7 +29,10 @@ async function seed(db: Db) {
   }
 }
 
-/** Embedded Postgres (PGlite) unless DATABASE_URL points at a real server. */
+/**
+ * Embedded Postgres (PGlite, stored in .data/pglite or PGLITE_DATA_DIR) unless
+ * DATABASE_URL points at a real server. No dataDir means in-memory.
+ */
 export async function createDb(options: { dataDir?: string } = {}): Promise<Db> {
   if (process.env.DATABASE_URL) {
     const db = drizzleNodePg(process.env.DATABASE_URL, { schema }) as unknown as Db;
@@ -36,6 +40,7 @@ export async function createDb(options: { dataDir?: string } = {}): Promise<Db> 
     await seed(db);
     return db;
   }
+  if (options.dataDir) mkdirSync(options.dataDir, { recursive: true });
   const client = new PGlite(options.dataDir);
   const db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: MIGRATIONS });
@@ -45,7 +50,8 @@ export async function createDb(options: { dataDir?: string } = {}): Promise<Db> 
 
 export function getDb(): Promise<Db> {
   if (!g.__brightsideDb) {
-    g.__brightsideDb = createDb({ dataDir: path.join(process.cwd(), ".data", "pglite") });
+    const dataDir = process.env.PGLITE_DATA_DIR ?? path.join(process.cwd(), ".data", "pglite");
+    g.__brightsideDb = createDb({ dataDir });
   }
   return g.__brightsideDb;
 }
