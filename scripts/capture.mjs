@@ -2,6 +2,7 @@
 //   docs/cards.png        top of docs/index.html (first finding card)
 //   docs/demo.gif         test output before -> captions -> test output after
 //   docs/cover-crop-*.png crops of the finding card used by docs/cover.html
+//   docs/idor-before-after.png  the e2e screenshots of finding 2, before and after, labelled
 // The terminal lines in the GIF are copied from docs/evidence/before.txt and
 // after.txt (run `node scripts/evidence.mjs` first); only the file path and the
 // timing are trimmed from each line.
@@ -128,7 +129,31 @@ await page.screenshot({
   clip: await clipOf(["#finding-2 tbody tr:nth-child(1)", "#finding-2 tbody tr:nth-child(3)"], 0),
 });
 
-// 2. GIF
+// 2. Finding 2 before and after, from the e2e screenshots (npm run evidence)
+const img64 = (f) => `data:image/png;base64,${readFileSync(f).toString("base64")}`;
+const idor = await browser.newPage({ viewport: { width: 1320, height: 400 }, deviceScaleFactor: 1 });
+const panel = (kind, label, text, file) => `
+  <section class="${kind}">
+    <p><b>${label}</b> ${esc(text)}</p>
+    <div class="shot"><img src="${img64(file)}"><span class="box"></span></div>
+  </section>`;
+await idor.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>
+  * { box-sizing: border-box; margin: 0; }
+  body { width: 1320px; padding: 20px; background: #f5f3ef; font: 20px/1.35 "Segoe UI", system-ui, sans-serif; color: #1f1a16; }
+  section { margin-bottom: 20px; } section:last-child { margin-bottom: 0; }
+  p { margin: 0 0 8px; } b { display: inline-block; padding: 2px 10px; border-radius: 6px; color: #fff; margin-right: 6px; }
+  .before b { background: #b42318; } .after b { background: #1f7a43; }
+  .shot { position: relative; width: 1280px; border: 1px solid #e4ddd4; border-radius: 10px; overflow: hidden; }
+  .shot img { display: block; width: 1280px; }
+  .box { position: absolute; left: 270px; top: 134px; width: 740px; height: 110px; border: 4px solid; border-radius: 14px; }
+  .before .box { border-color: #b42318; } .after .box { border-color: #1f7a43; }
+</style></head><body>
+  ${panel("before", "Before", "Alice is logged in. She changes one value in her browser and reloads: Bob's booking and his private note appear. (The original header always says \"Log in\".)", "docs/screenshots/before-app-idor.png")}
+  ${panel("after", "After", "Same steps: the server ignores the edited value and shows only Alice's own booking.", "docs/screenshots/app-idor.png")}
+</body></html>`, { waitUntil: "load" });
+await idor.screenshot({ path: "docs/idor-before-after.png", fullPage: true });
+
+// 3. GIF
 const gif = GIFEncoder();
 const shotPage = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
 for (const f of frames) {
@@ -142,4 +167,4 @@ for (const f of frames) {
 gif.finish();
 writeFileSync("docs/demo.gif", gif.bytes());
 await browser.close();
-console.log(`docs/cards.png, docs/card-other-customers.png, docs/demo.gif (${frames.length} frames)`);
+console.log(`docs/cards.png, docs/card-other-customers.png, docs/idor-before-after.png, docs/demo.gif (${frames.length} frames)`);

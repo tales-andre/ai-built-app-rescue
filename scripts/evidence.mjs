@@ -7,7 +7,7 @@
 //
 //   node scripts/evidence.mjs [--e2e]
 import { spawnSync } from "node:child_process";
-import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { removeBeforeWorktree } from "./before-worktree.mjs";
@@ -114,5 +114,8 @@ async function e2e() {
   // (On this version the test fails right after the screenshot, as expected.)
   await waitForFreePort(3100);
   console.log("before screenshot...");
-  run("npx", ["playwright", "test", "--reporter=list", "-g", "another customer"], B, { SCREENSHOTS_DIR: SHOTS, SHOT_PREFIX: "before-" });
+  rmSync(path.join(B, ".data", "pglite"), { recursive: true, force: true }); // start from an empty database
+  mkdirSync(path.join(B, ".data", "pglite"), { recursive: true });
+  r = run("npx", ["playwright", "test", "--reporter=list", "e2e/other-customers-bookings.spec.ts"], B, { SCREENSHOTS_DIR: SHOTS, SHOT_PREFIX: "before-" });
+  if (!existsSync(path.join(SHOTS, "before-app-idor.png"))) throw new Error("before screenshot missing\n" + r.out);
 }
