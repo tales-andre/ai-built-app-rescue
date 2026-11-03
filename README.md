@@ -5,7 +5,7 @@ tests.
 
 ![Demo: the same tests fail on the original code and pass after the fixes](docs/demo.gif)
 
-**Typical request we see:** *the app was put together mostly with an AI coding agent, it works in
+**A common request on freelance job boards:** *the app was put together mostly with an AI coding agent, it works in
 the demo, and now it has to take real customers and real payments. Can someone check what is
 wrong, fix it, and show that it is fixed?*
 
@@ -25,11 +25,9 @@ It is not a client's code.
 
 ![Finding card: other customers' bookings](docs/card-other-customers.png)
 
-| Booking (fixed app) | Alice, logged in, asks for Bob's bookings: nothing |
-|---|---|
-| ![Booking form](docs/screenshots/app-book.png) | ![Cross-customer request blocked](docs/screenshots/app-idor-blocked.png) |
+Finding 2 in the app itself, before and after:
 
-Screenshots taken by the Playwright tests (`SCREENSHOTS_DIR=docs/screenshots npx playwright test`).
+![Before: Alice sees Bob's booking and private note. After: only her own booking](docs/idor-before-after.png)
 
 ## What it shows
 
@@ -44,8 +42,8 @@ Screenshots taken by the Playwright tests (`SCREENSHOTS_DIR=docs/screenshots npx
 | Medium | Errors were hidden: the build ignored type errors (one was a real bug) and the webhook swallowed failures | [`08`](tests/findings/08-hidden-errors.test.ts) |
 | Medium | One person could end up with two accounts (sign-up race, letter case) | [`04`](tests/findings/04-duplicate-signup.test.ts) |
 
-Found while fixing: the session signing key had a hard-coded fallback
-([`tests/session.test.ts`](tests/session.test.ts)).
+Found while fixing: the session signing key had a hard-coded fallback, and the session cookie was
+not marked Secure ([`tests/session.test.ts`](tests/session.test.ts)).
 
 Not covered here: Supabase Row Level Security. For that, see
 [supabase-rls-tenant-audit](https://github.com/tales-andre/supabase-rls-tenant-audit).
@@ -61,10 +59,14 @@ Fix 6: validate every request body and let the server set prices
 Fix 7: pause login after repeated wrong passwords
 Fix 8: stop hiding errors
 ...
+Fix 7, follow-up: count each login attempt before the password check
+Fix 3, follow-up: validate webhook events and test each layer on its own
+...
 ```
 
 (The full log also has the commit that adds the tests, the end-to-end tests, the evidence and the
-docs.)
+docs. The two follow-ups came from a second review: the first login fix could be passed by
+sending guesses in parallel, and the first webhook tests did not prove each layer on its own.)
 
 ## Run it
 
@@ -77,26 +79,34 @@ cp .env.example .env.local     # demo values only
 npm run dev                    # http://localhost:3000: sign up, book, pay the deposit
 ```
 
+| Booking form | After paying the deposit |
+|---|---|
+| ![Booking form](docs/screenshots/app-book.png) | ![Booking confirmed](docs/screenshots/app-bookings.png) |
+
 Tests:
 
 ```bash
+npm run typecheck        # src/, tests/, e2e/ and the config files (scripts/ is plain JavaScript)
 npm test                 # fixed code: every test passes
 npm run test:before      # the same tests against tag vibe-coded: the finding tests fail
 npm run test:e2e         # production build + Playwright (Edge on Windows, Chromium elsewhere)
 ```
 
+The screenshots come from the Playwright tests: `SCREENSHOTS_DIR=docs/screenshots npx playwright test`
+after a build, or `npm run evidence`, which also takes the "before" one from the tag.
+
 Expected end of `npm test`:
 
 ```text
  Test Files  10 passed (10)
-      Tests  36 passed (36)
+      Tests  42 passed (42)
 ```
 
 Expected end of `npm run test:before`:
 
 ```text
  Test Files  9 failed | 1 passed (10)
-      Tests  28 failed | 8 passed (36)
+      Tests  34 failed | 8 passed (42)
 ```
 
 The 8 that pass on the original code are the normal-use tests (log in, book, cancel your own
@@ -116,8 +126,8 @@ npm run dev
 **Regenerate the evidence, the findings page, the GIF and the PDF:**
 
 ```bash
-npm run evidence     # runs unit and e2e tests on both versions, writes docs/evidence/
-npm run docs:build   # docs/index.html, docs/cards.png, docs/demo.gif
+npm run evidence     # unit and e2e tests on both versions: docs/evidence/ and docs/screenshots/
+npm run docs:build   # docs/index.html, the cards, docs/idor-before-after.png, docs/demo.gif
 npm run report:pdf   # report/findings.pdf
 ```
 
@@ -139,7 +149,9 @@ flowchart LR
   Postgres compiled to WebAssembly), with only the interfaces both versions share. That is what
   lets one suite run against both.
 - `scripts/test-before.mjs` checks the tag out into `.before/` with `git worktree`, copies the
-  current `tests/` in, and runs them there.
+  current `tests/` in, runs them there and removes the worktree at the end. `.before/node_modules`
+  is a link to the main `node_modules`: do not delete `.before/` with `git worktree remove` by
+  hand (it follows the link); use `node scripts/before-worktree.mjs --remove`.
 - Payments: the browser asks the app's server for a checkout; the server calls the PayDemo
   simulator with the secret key; the simulator sends a signed `checkout.completed` webhook back;
   the webhook charges the deposit once and confirms the booking.
@@ -164,14 +176,22 @@ sequenceDiagram
 - **Tests first, against both versions.** A test that only exists after the fix proves little; the
   same test failing on the original is the evidence that the problem was real.
 - **Embedded Postgres (PGlite) by default.** Runs anywhere with `npm ci`, and the tests exercise
-  real SQL: the unique index, the event table and the transaction in the webhook. `DATABASE_URL`
-  switches to a regular Postgres server.
+  real SQL: the unique index, the login attempts table, the transactions in the webhook and the
+  login. `DATABASE_URL` switches to a regular Postgres server.
 - **A small signed-cookie session** instead of an auth library, so the tests need no framework
   mocks. A real project would usually use Auth.js or the platform's auth; the findings (trusting
   the client, no rate limit) apply the same way.
-- **The webhook relies on three locks, not one:** the event id table (provider retries), the
-  booking status under a row lock (two checkouts for one booking), and the provider's idempotency
-  key (a crash between the charge and the database commit).
+- **The webhook has three layers, not one:** the event id table (provider retries), the booking
+  status checked under a row lock (two checkouts for one booking, or a cancelled booking), and the
+  provider's idempotency key (the provider charged but its answer was lost). What the tests prove:
+  with the idempotency key switched off on the simulated provider, the status check alone still
+  charges once, in sequence and at the same moment, and skips a cancelled booking; with the
+  provider's answer lost after charging, the key alone stops the retry from charging again. Not
+  proven by a test: the event id table (for this app's only event type, the status check also
+  stops a repeat) and the row lock (see Limits).
+- **The login limit counts the attempt before checking the password**, in one transaction under
+  a per-account advisory lock. Thirty guesses sent at the same moment get five answers of "wrong
+  password" and twenty-five of "paused".
 
 ## Limits
 
@@ -186,7 +206,11 @@ sequenceDiagram
 - Tested on Windows 11 with Node.js 22 (unit and e2e, Microsoft Edge); the GitHub Actions workflow
   targets Ubuntu with Chromium and has not run yet.
 - The optional real-Postgres path (`DATABASE_URL`, `docker compose`) was not run for this demo; the
-  tests and the screenshots use the embedded PGlite engine.
+  tests and the screenshots use the embedded PGlite engine. PGlite runs one transaction at a time,
+  so the parallel tests cannot catch a missing row lock (webhook) or advisory lock (login); those
+  locks matter on a Postgres server with several connections, which this demo did not test.
+- The session cookie is `Secure` in production. Browsers accept that on `http://localhost`, so
+  `npm start` works on your machine; on any other host, serve the app over HTTPS.
 - `npm audit` reports a moderate advisory in `drizzle-kit` (a development tool, through an old
   `esbuild`). It is not part of the running app.
 

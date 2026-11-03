@@ -1,76 +1,88 @@
-Running the current tests against tag vibe-coded (76ee353) in .before/
+Running the current tests against tag vibe-coded (ed9b53e) in .before/
 
  RUN  v5.1.0 <repo>/.before
 
- × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a customer cannot book a $55 haircut for $0 or mark it as already confirmed 5722ms
+ × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a customer cannot book a $55 haircut for $0 or mark it as already confirmed 6804ms
    → expected +0 to be 5500 // Object.is equality
- × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a missing service gets a clear 400 with the field name, not a 500 162ms
-   → expected 500 to be 400 // Object.is equality
- × tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the production build does not skip type errors 5981ms
-   → expected 'import type { NextConfig } from "next…' not to match /ignoreBuildErrors:\s*true/
- × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a malformed date gets a 400 that names the field 172ms
-   → expected '{"error":"The salon is closed at that…' to contain 'date'
- × tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > 10:00 on Nov 10 is saved as 10:00 salon time (16:00 UTC), not 10:00 UTC 6162ms
-   → expected '2026-11-10T10:00:00.000Z' to be '2026-11-10T16:00:00.000Z' // Object.is equality
- × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a service that does not exist gets a 400, not a 500 160ms
-   → expected 500 to be 400 // Object.is equality
- × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > notes longer than 1,000 characters are refused 197ms
-   → expected 201 to be 400 // Object.is equality
- × tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > two sign-ups with the same email at the same moment create one account 6346ms
-   → expected 2 to be 1 // Object.is equality
- × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request without the provider's signature is rejected and charges nothing 6367ms
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request without the provider's signature is rejected and charges nothing 6924ms
    → expected 200 to be 400 // Object.is equality
- × tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > follows daylight saving time: 10:00 on Oct 30 is 15:00 UTC 228ms
-   → expected '2026-10-30T10:00:00.000Z' to be '2026-10-30T15:00:00.000Z' // Object.is equality
- × tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot list Bob's bookings by changing the userId in the request 6448ms
+ × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a missing service gets a clear 400 with the field name, not a 500 150ms
+   → expected 500 to be 400 // Object.is equality
+ × tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot list Bob's bookings by editing the request 6999ms
    → expected [ 1 ] to not include 1
- × tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > opening hours are checked in salon time: 17:30 is accepted 181ms
-   → expected '2026-11-10T17:30:00.000Z' to be '2026-11-10T23:30:00.000Z' // Object.is equality
- × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request signed with the wrong secret is rejected 236ms
-   → expected 200 to be 400 // Object.is equality
- × tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > Dana@Example.com and dana@example.com are the same account 387ms
-   → expected 200 to be 409 // Object.is equality
- × tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > after 5 wrong passwords, login is paused for that account, even with the right password 6794ms
-   → expected 200 to be 429 // Object.is equality
- × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a replayed request older than 5 minutes is rejected 234ms
-   → expected 200 to be 400 // Object.is equality
- × tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot cancel Bob's booking 420ms
-   → expected 200 to be 404 // Object.is equality
- × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > the same event delivered twice (provider retry) charges the deposit once 200ms
-   → expected [ { id: 'ch_sim_1', …(4) }, …(1) ] to have a length of 1 but got 2
- × tests/session.test.ts > Session secret > a production server without SESSION_SECRET refuses to create sessions 16ms
-   → expected [Function] to throw an error
- ✓ tests/session.test.ts > Session secret > a cookie signed with another secret is not accepted 37ms
- × tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example) 39ms
-   → expected [ …(2) ] to deeply equal []
- ✓ tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > browser code does not import server modules that hold secrets 20ms
- × tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > modules that hold secrets are marked server-only, so a future client import fails the build 4ms
-   → src/lib/paydemo.ts: expected '// Client for "PayDemo", a FICTIONAL …' to match /^import ["']server-only["'];/m
- × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > two checkouts for the same booking (double click) charge the deposit once 232ms
-   → expected [ { id: 'ch_sim_1', …(4) }, …(1) ] to have a length of 1 but got 2
- × tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot create a booking in Bob's name 375ms
+ × tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > 10:00 on Nov 10 is saved as 10:00 salon time (16:00 UTC), not 10:00 UTC 7010ms
+   → expected '2026-11-10T10:00:00.000Z' to be '2026-11-10T16:00:00.000Z' // Object.is equality
+ × tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > two sign-ups with the same email at the same moment create one account 7011ms
    → expected 2 to be 1 // Object.is equality
- × tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > the limit is per account, whatever the letter case 663ms
-   → expected 401 to be 429 // Object.is equality
- × tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > a logged-out visitor gets 401, not someone's bookings 319ms
-   → expected 200 to be 401 // Object.is equality
- ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Bob can still list and cancel his own booking 290ms
- ✓ tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > a couple of typos followed by the right password still logs in 564ms
- ✓ tests/app.test.ts > Normal use keeps working > a customer can log in with the right password and not with a wrong one 2895ms
- ✓ tests/app.test.ts > Normal use keeps working > a customer can book, see the booking and cancel it 147ms
- ✓ tests/app.test.ts > Normal use keeps working > the booking price comes from the service list 122ms
- ✓ tests/app.test.ts > Normal use keeps working > a signed checkout event charges the deposit and confirms the booking 114ms
- × tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the code type-checks 5572ms
-   → expected 'src/lib/booking-time.ts(12,33): error…' to be '' // Object.is equality
- × tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the salon is closed on Sundays: a Sunday booking is refused (the bug the type error hid) 77ms
+ × tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the production build does not skip type errors 7035ms
+   → expected 'import type { NextConfig } from "next…' not to match /ignoreBuildErrors:\s*true/
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request signed with the wrong secret is rejected 147ms
+   → expected 200 to be 400 // Object.is equality
+ × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a malformed date gets a 400 that names the field 154ms
+   → expected '{"error":"The salon is closed at that…' to contain 'date'
+ × tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > follows daylight saving time: 10:00 on Oct 30 is 15:00 UTC 166ms
+   → expected '2026-10-30T10:00:00.000Z' to be '2026-10-30T15:00:00.000Z' // Object.is equality
+ × tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > Dana@Example.com and dana@example.com are the same account 281ms
+   → expected 200 to be 409 // Object.is equality
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a replayed request older than 5 minutes is rejected 134ms
+   → expected 200 to be 400 // Object.is equality
+ × tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > opening hours are checked in salon time: 17:30 is accepted 146ms
+   → expected '2026-11-10T17:30:00.000Z' to be '2026-11-10T23:30:00.000Z' // Object.is equality
+ × tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot cancel Bob's booking 271ms
+   → expected 200 to be 404 // Object.is equality
+ × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a service that does not exist gets a 400, not a 500 159ms
+   → expected 500 to be 400 // Object.is equality
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > the same event delivered twice (provider retry) charges the deposit once 168ms
+   → expected [ { id: 'ch_sim_1', …(4) }, …(1) ] to have a length of 1 but got 2
+ × tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > notes longer than 1,000 characters are refused 173ms
    → expected 201 to be 400 // Object.is equality
- × tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > when the deposit charge fails, the webhook answers 500 so the provider retries 85ms
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > two checkouts for the same booking (double click) charge once, even if the provider ignores the idempotency key 154ms
+   → expected [ { id: 'ch_sim_1', …(5) }, …(1) ] to have a length of 1 but got 2
+ × tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot create a booking in Bob's name 284ms
+   → expected 2 to be 1 // Object.is equality
+ × tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > after 5 wrong passwords, login is paused for that account, even with the right password 7623ms
+   → expected 200 to be 429 // Object.is equality
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > two checkouts for the same booking arriving at the same moment charge once, without the idempotency key 174ms
+   → expected [ { id: 'ch_sim_1', …(5) }, …(1) ] to have a length of 1 but got 2
+ × tests/session.test.ts > Session secret > a production server without SESSION_SECRET refuses to create sessions 12ms
+   → expected [Function] to throw an error
+ ✓ tests/session.test.ts > Session secret > a cookie signed with another secret is not accepted 28ms
+ × tests/session.test.ts > Session cookie > in production the session cookie is HttpOnly and only sent over HTTPS (Secure) 19ms
+   → expected [ 'Path=/', 'HttpOnly', …(2) ] to include 'Secure'
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a checkout event for a cancelled booking charges nothing and does not confirm it 179ms
+   → expected [ { id: 'ch_sim_1', …(5) } ] to have a length of +0 but got 1
+ × tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > a logged-out visitor gets 401, not someone's bookings 332ms
+   → expected 200 to be 401 // Object.is equality
+ × tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example) 28ms
+   → expected [ …(2) ] to deeply equal []
+ ✓ tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > browser code does not import server modules that hold secrets 16ms
+ × tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > modules that hold secrets are marked server-only, so a future client import fails the build 3ms
+   → src/lib/paydemo.ts: expected '// Client for "PayDemo", a FICTIONAL …' to match /^import ["']server-only["'];/m
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > if the provider's answer is lost after charging, the retry does not charge again (idempotency key) 240ms
+   → expected 200 to be 500 // Object.is equality
+ ✓ tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Bob can still list and cancel his own booking 379ms
+ × tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a signed event without booking details gets 400, not 500, and charges nothing 154ms
+   → expected 200 to be 400 // Object.is equality
+ × tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > 30 wrong passwords sent at the same moment: only 5 are checked, the rest are paused 1035ms
+   → expected [ 401, 401, 401, 401, 401, 401, …(24) ] to have a length of 5 but got 30
+ × tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > the limit is per account, whatever the letter case 363ms
+   → expected 401 to be 429 // Object.is equality
+ ✓ tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > a couple of typos followed by the right password still logs in 360ms
+ ✓ tests/app.test.ts > Normal use keeps working > a customer can log in with the right password and not with a wrong one 3008ms
+ ✓ tests/app.test.ts > Normal use keeps working > a customer can book, see the booking and cancel it 244ms
+ ✓ tests/app.test.ts > Normal use keeps working > the booking price comes from the service list 128ms
+ ✓ tests/app.test.ts > Normal use keeps working > a signed checkout event charges the deposit and confirms the booking 123ms
+ × tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the code type-checks 5792ms
+   → expected 'src/lib/booking-time.ts(12,33): error…' to be '' // Object.is equality
+ × tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the salon is closed on Sundays: a Sunday booking is refused (the bug the type error hid) 114ms
+   → expected 201 to be 400 // Object.is equality
+ × tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > when the deposit charge fails, the webhook answers 500 so the provider retries 91ms
    → expected 200 to be 500 // Object.is equality
 
  Test Files  9 failed | 1 passed (10)
-      Tests  28 failed | 8 passed (36)
-   Start at  09:41:27
-   Duration  13.16s (tests 86%, import 13%)
+      Tests  34 failed | 8 passed (42)
+   Start at  10:24:03
+   Duration  14.48s (tests 87%, import 12%)
 
 JSON report written to <repo>/.data/evidence/before.json
 
@@ -79,7 +91,7 @@ Expected result: the 'before' version fails the finding tests (see above).
   - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
 Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
 
-⎯⎯⎯⎯⎯⎯ Failed Tests 28 ⎯⎯⎯⎯⎯⎯⎯
+⎯⎯⎯⎯⎯⎯ Failed Tests 34 ⎯⎯⎯⎯⎯⎯⎯
 
  FAIL  tests/session.test.ts > Session secret > a production server without SESSION_SECRET refuses to create sessions
 AssertionError: expected [Function] to throw an error
@@ -98,7 +110,19 @@ undefined
      14|   });
      15|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/34]⎯
+
+ FAIL  tests/session.test.ts > Session cookie > in production the session cookie is HttpOnly and only sent over HTTPS (Secure)
+AssertionError: expected [ 'Path=/', 'HttpOnly', …(2) ] to include 'Secure'
+ ❯ tests/session.test.ts:30:19
+     28|     const attrs = sessionCookie(1).split(";").map((a) => a.trim()).sli…
+     29|     expect(attrs).toContain("HttpOnly");
+     30|     expect(attrs).toContain("Secure");
+       |                   ^
+     31|   });
+     32| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/34]⎯
 
  FAIL  tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example)
 AssertionError: expected [ …(2) ] to deeply equal []
@@ -120,7 +144,7 @@ AssertionError: expected [ …(2) ] to deeply equal []
      32|   });
      33|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/34]⎯
 
  FAIL  tests/findings/01-secret-in-browser.test.ts > Finding 1: the payment secret key is shipped to the browser > modules that hold secrets are marked server-only, so a future client import fails the build
 AssertionError: src/lib/paydemo.ts: expected '// Client for "PayDemo", a FICTIONAL …' to match /^import ["']server-only["'];/m
@@ -192,19 +216,19 @@ export function resetProvider() {
      49|     }
      50|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/34]⎯
 
- FAIL  tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot list Bob's bookings by changing the userId in the request
+ FAIL  tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot list Bob's bookings by editing the request
 AssertionError: expected [ 1 ] to not include 1
- ❯ tests/findings/02-other-customers-bookings.test.ts:31:21
-     29|     const body = await res.json();
-     30|     const ids = (body.bookings ?? []).map((b: { id: number }) => b.id);
-     31|     expect(ids).not.toContain(bobsBooking.id);
+ ❯ tests/findings/02-other-customers-bookings.test.ts:32:21
+     30|     const body = await res.json();
+     31|     const ids = (body.bookings ?? []).map((b: { id: number }) => b.id);
+     32|     expect(ids).not.toContain(bobsBooking.id);
        |                     ^
-     32|   });
-     33|
+     33|   });
+     34|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/34]⎯
 
  FAIL  tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot cancel Bob's booking
 AssertionError: expected 200 to be 404 // Object.is equality
@@ -215,15 +239,15 @@ AssertionError: expected 200 to be 404 // Object.is equality
 - 404
 + 200
 
- ❯ tests/findings/02-other-customers-bookings.test.ts:36:24
-     34|   it("Alice cannot cancel Bob's booking", async () => {
-     35|     const res = await cancelBooking(alice, bobsBooking.id, { userId: b…
-     36|     expect(res.status).toBe(404);
+ ❯ tests/findings/02-other-customers-bookings.test.ts:37:24
+     35|   it("Alice cannot cancel Bob's booking", async () => {
+     36|     const res = await cancelBooking(alice, bobsBooking.id, { userId: b…
+     37|     expect(res.status).toBe(404);
        |                        ^
-     37|     expect((await getBooking(bobsBooking.id)).status).toBe("pending_de…
-     38|   });
+     38|     expect((await getBooking(bobsBooking.id)).status).toBe("pending_de…
+     39|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/34]⎯
 
  FAIL  tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > Alice cannot create a booking in Bob's name
 AssertionError: expected 2 to be 1 // Object.is equality
@@ -234,15 +258,15 @@ AssertionError: expected 2 to be 1 // Object.is equality
 - 1
 + 2
 
- ❯ tests/findings/02-other-customers-bookings.test.ts:44:30
-     42|     if (res.status === 201) {
-     43|       const { booking } = await res.json();
-     44|       expect(booking.userId).toBe(alice.id);
-       |                              ^
-     45|     }
-     46|   });
+ ❯ tests/findings/02-other-customers-bookings.test.ts:45:71
+     43|     // Either refused, or booked for Alice herself; never a 500, never…
+     44|     expect([201, 400, 403]).toContain(res.status);
+     45|     if (res.status === 201) expect((await res.json()).booking.userId).…
+       |                                                                       ^
+     46|     expect((await bookingsOf(bob.id)).map((b) => b.id)).toEqual([bobsB…
+     47|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/34]⎯
 
  FAIL  tests/findings/02-other-customers-bookings.test.ts > Finding 2: a customer can see and cancel other customers' bookings > a logged-out visitor gets 401, not someone's bookings
 AssertionError: expected 200 to be 401 // Object.is equality
@@ -253,15 +277,15 @@ AssertionError: expected 200 to be 401 // Object.is equality
 - 401
 + 200
 
- ❯ tests/findings/02-other-customers-bookings.test.ts:50:24
-     48|   it("a logged-out visitor gets 401, not someone's bookings", async ()…
-     49|     const res = await listBookings(null, { userId: bob.id });
-     50|     expect(res.status).toBe(401);
+ ❯ tests/findings/02-other-customers-bookings.test.ts:51:24
+     49|   it("a logged-out visitor gets 401, not someone's bookings", async ()…
+     50|     const res = await listBookings(null, { userId: bob.id });
+     51|     expect(res.status).toBe(401);
        |                        ^
-     51|   });
-     52|
+     52|   });
+     53|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/34]⎯
 
  FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request without the provider's signature is rejected and charges nothing
 AssertionError: expected 200 to be 400 // Object.is equality
@@ -272,15 +296,15 @@ AssertionError: expected 200 to be 400 // Object.is equality
 - 400
 + 200
 
- ❯ tests/findings/03-payment-webhook.test.ts:27:24
-     25|   it("a request without the provider's signature is rejected and charg…
-     26|     const res = await deliverWebhook(checkoutEvent(bookingId), { signa…
-     27|     expect(res.status).toBe(400);
+ ❯ tests/findings/03-payment-webhook.test.ts:55:24
+     53|   it("a request without the provider's signature is rejected and charg…
+     54|     const res = await deliverWebhook(checkoutEvent(bookingId), { signa…
+     55|     expect(res.status).toBe(400);
        |                        ^
-     28|     expect(listCharges()).toHaveLength(0);
-     29|     expect((await getBooking(bookingId)).status).toBe("pending_deposit…
+     56|     expect(listCharges()).toHaveLength(0);
+     57|     expect((await getBooking(bookingId)).status).toBe("pending_deposit…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/34]⎯
 
  FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a request signed with the wrong secret is rejected
 AssertionError: expected 200 to be 400 // Object.is equality
@@ -291,15 +315,15 @@ AssertionError: expected 200 to be 400 // Object.is equality
 - 400
 + 200
 
- ❯ tests/findings/03-payment-webhook.test.ts:37:24
-     35|       signature: signPayload(JSON.stringify(event), { secret: "whsec_g…
-     36|     });
-     37|     expect(res.status).toBe(400);
+ ❯ tests/findings/03-payment-webhook.test.ts:65:24
+     63|       signature: signPayload(JSON.stringify(event), { secret: "whsec_g…
+     64|     });
+     65|     expect(res.status).toBe(400);
        |                        ^
-     38|     expect(listCharges()).toHaveLength(0);
-     39|   });
+     66|     expect(listCharges()).toHaveLength(0);
+     67|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/34]⎯
 
  FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a replayed request older than 5 minutes is rejected
 AssertionError: expected 200 to be 400 // Object.is equality
@@ -310,15 +334,15 @@ AssertionError: expected 200 to be 400 // Object.is equality
 - 400
 + 200
 
- ❯ tests/findings/03-payment-webhook.test.ts:45:24
-     43|     const tenMinutesAgo = Math.floor(Date.now() / 1000) - 600;
-     44|     const res = await deliverWebhook(event, { signature: signPayload(J…
-     45|     expect(res.status).toBe(400);
+ ❯ tests/findings/03-payment-webhook.test.ts:73:24
+     71|     const tenMinutesAgo = Math.floor(Date.now() / 1000) - 600;
+     72|     const res = await deliverWebhook(event, { signature: signPayload(J…
+     73|     expect(res.status).toBe(400);
        |                        ^
-     46|     expect(listCharges()).toHaveLength(0);
-     47|   });
+     74|     expect(listCharges()).toHaveLength(0);
+     75|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/34]⎯
 
  FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > the same event delivered twice (provider retry) charges the deposit once
 AssertionError: expected [ { id: 'ch_sim_1', …(4) }, …(1) ] to have a length of 1 but got 2
@@ -329,18 +353,18 @@ AssertionError: expected [ { id: 'ch_sim_1', …(4) }, …(1) ] to have a length
 - 1
 + 2
 
- ❯ tests/findings/03-payment-webhook.test.ts:53:27
-     51|     expect((await deliverWebhook(event)).status).toBe(200);
-     52|     expect((await deliverWebhook(event)).status).toBe(200);
-     53|     expect(listCharges()).toHaveLength(1);
+ ❯ tests/findings/03-payment-webhook.test.ts:81:27
+     79|     expect((await deliverWebhook(event)).status).toBe(200);
+     80|     expect((await deliverWebhook(event)).status).toBe(200);
+     81|     expect(listCharges()).toHaveLength(1);
        |                           ^
-     54|     expect((await getBooking(bookingId)).status).toBe("confirmed");
-     55|   });
+     82|     expect((await getBooking(bookingId)).status).toBe("confirmed");
+     83|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/34]⎯
 
- FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > two checkouts for the same booking (double click) charge the deposit once
-AssertionError: expected [ { id: 'ch_sim_1', …(4) }, …(1) ] to have a length of 1 but got 2
+ FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > two checkouts for the same booking (double click) charge once, even if the provider ignores the idempotency key
+AssertionError: expected [ { id: 'ch_sim_1', …(5) }, …(1) ] to have a length of 1 but got 2
 
 - Expected
 + Received
@@ -348,15 +372,91 @@ AssertionError: expected [ { id: 'ch_sim_1', …(4) }, …(1) ] to have a length
 - 1
 + 2
 
- ❯ tests/findings/03-payment-webhook.test.ts:60:27
-     58|     await deliverWebhook(checkoutEvent(bookingId, "evt_click_1"));
-     59|     await deliverWebhook(checkoutEvent(bookingId, "evt_click_2"));
-     60|     expect(listCharges()).toHaveLength(1);
+ ❯ tests/findings/03-payment-webhook.test.ts:89:27
+     87|     expect((await deliverWebhook(checkoutEvent(bookingId, "evt_click_1…
+     88|     expect((await deliverWebhook(checkoutEvent(bookingId, "evt_click_2…
+     89|     expect(listCharges()).toHaveLength(1);
        |                           ^
-     61|   });
-     62| });
+     90|   });
+     91|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/34]⎯
+
+ FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > two checkouts for the same booking arriving at the same moment charge once, without the idempotency key
+AssertionError: expected [ { id: 'ch_sim_1', …(5) }, …(1) ] to have a length of 1 but got 2
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ tests/findings/03-payment-webhook.test.ts:99:27
+     97|     ]);
+     98|     expect(results.map((r) => r.status)).toEqual([200, 200]);
+     99|     expect(listCharges()).toHaveLength(1);
+       |                           ^
+    100|   });
+    101|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/34]⎯
+
+ FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a checkout event for a cancelled booking charges nothing and does not confirm it
+AssertionError: expected [ { id: 'ch_sim_1', …(5) } ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ tests/findings/03-payment-webhook.test.ts:106:27
+    104|     expect((await cancelBooking(carol, bookingId)).status).toBe(200);
+    105|     expect((await deliverWebhook(checkoutEvent(bookingId))).status).to…
+    106|     expect(listCharges()).toHaveLength(0);
+       |                           ^
+    107|     expect((await getBooking(bookingId)).status).toBe("cancelled");
+    108|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/34]⎯
+
+ FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > if the provider's answer is lost after charging, the retry does not charge again (idempotency key)
+AssertionError: expected 200 to be 500 // Object.is equality
+
+- Expected
++ Received
+
+- 500
++ 200
+
+ ❯ tests/findings/03-payment-webhook.test.ts:113:50
+    111|     const event = checkoutEvent(bookingId, "evt_lost_answer");
+    112|     provider.loseNextResponse = true;
+    113|     expect((await deliverWebhook(event)).status).toBe(500);
+       |                                                  ^
+    114|     expect((await getBooking(bookingId)).status).toBe("pending_deposit…
+    115|     expect((await deliverWebhook(event)).status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/34]⎯
+
+ FAIL  tests/findings/03-payment-webhook.test.ts > Finding 3: the payment webhook can be faked and can charge twice > a signed event without booking details gets 400, not 500, and charges nothing
+AssertionError: expected 200 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 200
+
+ ❯ tests/findings/03-payment-webhook.test.ts:122:24
+    120|   it("a signed event without booking details gets 400, not 500, and ch…
+    121|     const res = await deliverWebhook({ id: "evt_no_data", type: "check…
+    122|     expect(res.status).toBe(400);
+       |                        ^
+    123|     expect(listCharges()).toHaveLength(0);
+    124|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/34]⎯
 
  FAIL  tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > two sign-ups with the same email at the same moment create one account
 AssertionError: expected 2 to be 1 // Object.is equality
@@ -375,7 +475,7 @@ AssertionError: expected 2 to be 1 // Object.is equality
      18|     const statuses = [a.status, b.status];
      19|     expect(statuses.filter((s) => s >= 200 && s < 300)).toHaveLength(1…
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/34]⎯
 
  FAIL  tests/findings/04-duplicate-signup.test.ts > Finding 4: one person can end up with two accounts > Dana@Example.com and dana@example.com are the same account
 AssertionError: expected 200 to be 409 // Object.is equality
@@ -394,7 +494,7 @@ AssertionError: expected 200 to be 409 // Object.is equality
      26|     expect(await accountsFor("dana@example.com")).toBe(1);
      27|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/34]⎯
 
  FAIL  tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > 10:00 on Nov 10 is saved as 10:00 salon time (16:00 UTC), not 10:00 UTC
 AssertionError: expected '2026-11-10T10:00:00.000Z' to be '2026-11-10T16:00:00.000Z' // Object.is equality
@@ -410,7 +510,7 @@ Received: "2026-11-10T10:00:00.000Z"
      17|   });
      18|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/34]⎯
 
  FAIL  tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > follows daylight saving time: 10:00 on Oct 30 is 15:00 UTC
 AssertionError: expected '2026-10-30T10:00:00.000Z' to be '2026-10-30T15:00:00.000Z' // Object.is equality
@@ -426,7 +526,7 @@ Received: "2026-10-30T10:00:00.000Z"
      22|   });
      23|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/34]⎯
 
  FAIL  tests/findings/05-time-zone.test.ts > Finding 5: appointment times are saved in the wrong time zone > opening hours are checked in salon time: 17:30 is accepted
 AssertionError: expected '2026-11-10T17:30:00.000Z' to be '2026-11-10T23:30:00.000Z' // Object.is equality
@@ -442,7 +542,7 @@ Received: "2026-11-10T17:30:00.000Z"
      27|   });
      28| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/34]⎯
 
  FAIL  tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a customer cannot book a $55 haircut for $0 or mark it as already confirmed
 AssertionError: expected +0 to be 5500 // Object.is equality
@@ -461,7 +561,7 @@ AssertionError: expected +0 to be 5500 // Object.is equality
      26|     expect(saved.status).toBe("pending_deposit");
      27|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/34]⎯
 
  FAIL  tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a missing service gets a clear 400 with the field name, not a 500
 AssertionError: expected 500 to be 400 // Object.is equality
@@ -480,7 +580,7 @@ AssertionError: expected 500 to be 400 // Object.is equality
      32|     expect(JSON.stringify(await res.json())).toContain("serviceId");
      33|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/34]⎯
 
  FAIL  tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a malformed date gets a 400 that names the field
 AssertionError: expected '{"error":"The salon is closed at that…' to contain 'date'
@@ -496,7 +596,7 @@ Received: "{"error":"The salon is closed at that time"}"
      39|   });
      40|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/34]⎯
 
  FAIL  tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > a service that does not exist gets a 400, not a 500
 AssertionError: expected 500 to be 400 // Object.is equality
@@ -515,7 +615,7 @@ AssertionError: expected 500 to be 400 // Object.is equality
      44|   });
      45|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/34]⎯
 
  FAIL  tests/findings/06-input-validation.test.ts > Finding 6: the booking form trusts whatever the browser sends > notes longer than 1,000 characters are refused
 AssertionError: expected 201 to be 400 // Object.is equality
@@ -534,7 +634,7 @@ AssertionError: expected 201 to be 400 // Object.is equality
      49|   });
      50| });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/34]⎯
 
  FAIL  tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > after 5 wrong passwords, login is paused for that account, even with the right password
 AssertionError: expected 200 to be 429 // Object.is equality
@@ -553,7 +653,26 @@ AssertionError: expected 200 to be 429 // Object.is equality
      17|     expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
      18|   });
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/34]⎯
+
+ FAIL  tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > 30 wrong passwords sent at the same moment: only 5 are checked, the rest are paused
+AssertionError: expected [ 401, 401, 401, 401, 401, 401, …(24) ] to have a length of 5 but got 30
+
+- Expected
++ Received
+
+- 5
++ 30
+
+ ❯ tests/findings/07-login-rate-limit.test.ts:23:47
+     21|     const burst = await Promise.all(Array.from({ length: 30 }, (_, i) …
+     22|     const statuses = burst.map((r) => r.status);
+     23|     expect(statuses.filter((s) => s === 401)).toHaveLength(5);
+       |                                               ^
+     24|     expect(statuses.filter((s) => s === 429)).toHaveLength(25);
+     25|     expect((await login("grace@example.com", PASSWORD)).status).toBe(4…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/34]⎯
 
  FAIL  tests/findings/07-login-rate-limit.test.ts > Finding 7: unlimited password guessing > the limit is per account, whatever the letter case
 AssertionError: expected 401 to be 429 // Object.is equality
@@ -564,15 +683,15 @@ AssertionError: expected 401 to be 429 // Object.is equality
 - 429
 + 401
 
- ❯ tests/findings/07-login-rate-limit.test.ts:22:65
-     20|   it("the limit is per account, whatever the letter case", async () =>…
-     21|     for (let i = 0; i < 5; i++) await login(i % 2 ? "GRACE@example.com…
-     22|     expect((await login("Grace@Example.com", PASSWORD)).status).toBe(4…
+ ❯ tests/findings/07-login-rate-limit.test.ts:30:65
+     28|   it("the limit is per account, whatever the letter case", async () =>…
+     29|     for (let i = 0; i < 5; i++) await login(i % 2 ? "GRACE@example.com…
+     30|     expect((await login("Grace@Example.com", PASSWORD)).status).toBe(4…
        |                                                                 ^
-     23|   });
-     24|
+     31|   });
+     32|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/34]⎯
 
  FAIL  tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the production build does not skip type errors
 AssertionError: expected 'import type { NextConfig } from "next…' not to match /ignoreBuildErrors:\s*true/
@@ -602,7 +721,7 @@ export default nextConfig;
      31|   });
      32|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/34]⎯
 
  FAIL  tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the code type-checks
 AssertionError: expected 'src/lib/booking-time.ts(12,33): error…' to be '' // Object.is equality
@@ -621,7 +740,7 @@ AssertionError: expected 'src/lib/booking-time.ts(12,33): error…' to be '' // 
      42|   }, 120_000);
      43|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/34]⎯
 
  FAIL  tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > the salon is closed on Sundays: a Sunday booking is refused (the bug the type error hid)
 AssertionError: expected 201 to be 400 // Object.is equality
@@ -640,7 +759,7 @@ AssertionError: expected 201 to be 400 // Object.is equality
      47|   });
      48|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/34]⎯
 
  FAIL  tests/findings/08-hidden-errors.test.ts > Finding 8: errors are hidden instead of handled > when the deposit charge fails, the webhook answers 500 so the provider retries
 AssertionError: expected 200 to be 500 // Object.is equality
@@ -659,5 +778,5 @@ AssertionError: expected 200 to be 500 // Object.is equality
      54|     expect((await getBooking(id)).status).toBe("pending_deposit");
      55|
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/28]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/34]⎯
 

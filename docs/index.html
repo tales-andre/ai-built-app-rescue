@@ -78,8 +78,8 @@
   and the commit that fixes it.</p>
   <div class="summary">
     <div class="pill">Same tests, two versions: tag <code>vibe-coded</code> and branch <code>main</code></div>
-    <div class="pill">Before: 28 failing, 8 passing</div>
-    <div class="pill">After: 36 passing, 0 failing</div>
+    <div class="pill">Before: 34 failing, 8 passing</div>
+    <div class="pill">After: 42 passing, 0 failing</div>
     <div class="pill">Normal use (<code>tests/app.test.ts</code>): 4/4 before, 4/4 after</div>
   </div>
   
@@ -100,7 +100,7 @@
     </table>
     <p class="dev"><strong>For your developer:</strong> Payment secret key in a NEXT_PUBLIC_ variable, used in a client component. <strong>Fix:</strong> Checkout moved to a server route (/api/checkout) that checks the session; the key lives only in a server variable. Modules that hold secrets import server-only, so a client import fails the build.</p>
     <p class="now"><strong>To do outside the code:</strong> Rotate the key at the payment provider. Fixing the code does not un-leak a key that was already shipped.</p>
-    <details><summary>The fix: <code>Fix 1: keep the payment secret key on the server</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/d26049645985d23fc999b9fcf3c1bfe8cf5b4ef1">d260496</a>)</summary>
+    <details><summary>The fix: <code>Fix 1: keep the payment secret key on the server</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/4725ee74b841524b0d19de5bae7f4c4ede3cdeb4">4725ee7</a>)</summary>
       <pre class="diff"><span class="file">.env.example</span>
 <span class="meta">--- a/.env.example</span>
 <span class="meta">+++ b/.env.example</span>
@@ -206,11 +206,11 @@
     </div>
     <table class="tests">
       <thead><tr><th>Test (<code>tests/findings/02-other-customers-bookings.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
-      <tbody><tr><td>Alice cannot list Bob's bookings by changing the userId in the request</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Alice cannot cancel Bob's booking</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Alice cannot create a booking in Bob's name</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a logged-out visitor gets 401, not someone's bookings</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Bob can still list and cancel his own booking</td><td><span class="ok">pass</span></td><td><span class="ok">pass</span></td></tr></tbody>
+      <tbody><tr><td>Alice cannot list Bob's bookings by editing the request</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Alice cannot cancel Bob's booking</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Alice cannot create a booking in Bob's name</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a logged-out visitor gets 401, not someone's bookings</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>Bob can still list and cancel his own booking</td><td><span class="ok">pass</span></td><td><span class="ok">pass</span></td></tr></tbody>
     </table>
     <p class="dev"><strong>For your developer:</strong> IDOR: API trusts userId from the query string and body; cancel has no ownership check. <strong>Fix:</strong> The user comes from the signed session cookie. Cancel only matches the caller's own booking and answers 404 otherwise. Logged-out calls get 401.</p>
     <p class="now"><strong>To do outside the code:</strong> Check the server logs for cancellations that did not come from the booking's owner, if logs exist.</p>
-    <details><summary>The fix: <code>Fix 2: take the customer from the session, not from the request</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/117dd3b0e1b541152ea54165e8445ab11a43b5b1">117dd3b</a>)</summary>
+    <details><summary>The fix: <code>Fix 2: take the customer from the session, not from the request</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/fde68f4ad7b6a0ea4f8e7bd8cd0a9113fb5be588">fde68f4</a>)</summary>
       <pre class="diff"><span class="file">src/app/api/bookings/[id]/cancel/route.ts</span>
 <span class="meta">--- a/src/app/api/bookings/[id]/cancel/route.ts</span>
 <span class="meta">+++ b/src/app/api/bookings/[id]/cancel/route.ts</span>
@@ -310,17 +310,17 @@
     </header>
     <p class="owner"><strong>What could happen to your business:</strong> The address that receives payment notifications accepted messages from anyone. Payment providers also resend notifications they are not sure arrived; each resend charged the customer's deposit again. Double charges mean refunds, chargeback fees and angry reviews.</p>
     <div class="ba">
-      <div class="before"><div class="label">Before</div><div class="big">5 of 5 tests fail</div></div>
+      <div class="before"><div class="label">Before</div><div class="big">9 of 9 tests fail</div></div>
       <div class="arrow" aria-hidden="true">&rarr;</div>
-      <div class="after"><div class="label">After</div><div class="big">5 of 5 pass</div></div>
+      <div class="after"><div class="label">After</div><div class="big">9 of 9 pass</div></div>
     </div>
     <table class="tests">
       <thead><tr><th>Test (<code>tests/findings/03-payment-webhook.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
-      <tbody><tr><td>a request without the provider's signature is rejected and charges nothing</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a request signed with the wrong secret is rejected</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a replayed request older than 5 minutes is rejected</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>the same event delivered twice (provider retry) charges the deposit once</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>two checkouts for the same booking (double click) charge the deposit once</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr></tbody>
+      <tbody><tr><td>a request without the provider's signature is rejected and charges nothing</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a request signed with the wrong secret is rejected</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a replayed request older than 5 minutes is rejected</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>the same event delivered twice (provider retry) charges the deposit once</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>two checkouts for the same booking (double click) charge once, even if the provider ignores the idempotency key</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>two checkouts for the same booking arriving at the same moment charge once, without the idempotency key</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a checkout event for a cancelled booking charges nothing and does not confirm it</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>if the provider's answer is lost after charging, the retry does not charge again (idempotency key)</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a signed event without booking details gets 400, not 500, and charges nothing</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr></tbody>
     </table>
-    <p class="dev"><strong>For your developer:</strong> Webhook without signature verification or idempotency. <strong>Fix:</strong> HMAC signature and timestamp checked on the raw body; each event id recorded once (processed_events); the booking row is locked and only charged while it waits for a deposit; the charge carries an idempotency key.</p>
+    <p class="dev"><strong>For your developer:</strong> Webhook without signature verification or idempotency. <strong>Fix:</strong> HMAC signature and timestamp checked on the raw body; the event is validated with zod (a malformed one gets 400, not a 500 that the provider would retry forever); each event id recorded once (processed_events); the booking row is locked and only charged while it waits for a deposit; the charge carries an idempotency key.</p>
     <p class="now"><strong>To do outside the code:</strong> Compare deposits in the provider dashboard with bookings; refund any duplicates.</p>
-    <details><summary>The fix: <code>Fix 3: verify webhook signatures and charge each deposit once</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/714d21017bcfadbba1fa858fd40e29616fc5a7b5">714d210</a>)</summary>
+    <details><summary>The fix: <code>Fix 3: verify webhook signatures and charge each deposit once</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/a3c545a07f2198629ebce69bad8b89019e2e8cfb">a3c545a</a>)</summary>
       <pre class="diff"><span class="file">drizzle/0001_processed_events.sql</span>
 <span class="meta">--- /dev/null</span>
 <span class="meta">+++ b/drizzle/0001_processed_events.sql</span>
@@ -430,7 +430,7 @@
     </table>
     <p class="dev"><strong>For your developer:</strong> new Date(`${date}T${time}`) uses the server time zone. <strong>Fix:</strong> Times are converted from America/Chicago with daylight saving handled; opening hours use the salon's clock; the app shows salon time.</p>
     <p class="now"><strong>To do outside the code:</strong> Existing bookings were stored hours off. Shift them with a one-off script after checking a few by hand.</p>
-    <details><summary>The fix: <code>Fix 5: read appointment times in the salon's time zone</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/4ab47b2937d7c02748b4990bb82a069535f14061">4ab47b2</a>)</summary>
+    <details><summary>The fix: <code>Fix 5: read appointment times in the salon's time zone</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/2cbead01951218c7904fb45cd9f0313e1fcee1b4">2cbead0</a>)</summary>
       <pre class="diff"><span class="file">src/app/bookings/page.tsx</span>
 <span class="meta">--- a/src/app/bookings/page.tsx</span>
 <span class="meta">+++ b/src/app/bookings/page.tsx</span>
@@ -516,7 +516,7 @@
     </table>
     <p class="dev"><strong>For your developer:</strong> Mass assignment (...body into insert) and no input validation. <strong>Fix:</strong> zod schemas on every request body (unknown keys dropped); a 400 that names the bad field; price and status set by the server.</p>
     <p class="now"><strong>To do outside the code:</strong> Look for bookings whose price differs from the service price.</p>
-    <details><summary>The fix: <code>Fix 6: validate every request body and let the server set prices</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/ca0836efb24c5fc99f1288248d0e5b8e86e17ec0">ca0836e</a>)</summary>
+    <details><summary>The fix: <code>Fix 6: validate every request body and let the server set prices</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/6d35dbe4cf1c2fa5a2f725848d2d51d5287e95c5">6d35dbe</a>)</summary>
       <pre class="diff"><span class="file">src/app/api/auth/login/route.ts</span>
 <span class="meta">--- a/src/app/api/auth/login/route.ts</span>
 <span class="meta">+++ b/src/app/api/auth/login/route.ts</span>
@@ -616,17 +616,17 @@
     </header>
     <p class="owner"><strong>What could happen to your business:</strong> A script could try passwords against a customer's account as fast as the server answers. Reused or weak passwords fall quickly.</p>
     <div class="ba">
-      <div class="before"><div class="label">Before</div><div class="big">2 of 3 tests fail</div></div>
+      <div class="before"><div class="label">Before</div><div class="big">3 of 4 tests fail</div></div>
       <div class="arrow" aria-hidden="true">&rarr;</div>
-      <div class="after"><div class="label">After</div><div class="big">3 of 3 pass</div></div>
+      <div class="after"><div class="label">After</div><div class="big">4 of 4 pass</div></div>
     </div>
     <table class="tests">
       <thead><tr><th>Test (<code>tests/findings/07-login-rate-limit.test.ts</code>)</th><th>Before</th><th>After</th></tr></thead>
-      <tbody><tr><td>after 5 wrong passwords, login is paused for that account, even with the right password</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>the limit is per account, whatever the letter case</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a couple of typos followed by the right password still logs in</td><td><span class="ok">pass</span></td><td><span class="ok">pass</span></td></tr></tbody>
+      <tbody><tr><td>after 5 wrong passwords, login is paused for that account, even with the right password</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>30 wrong passwords sent at the same moment: only 5 are checked, the rest are paused</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>the limit is per account, whatever the letter case</td><td><span class="bad">fail</span></td><td><span class="ok">pass</span></td></tr><tr><td>a couple of typos followed by the right password still logs in</td><td><span class="ok">pass</span></td><td><span class="ok">pass</span></td></tr></tbody>
     </table>
-    <p class="dev"><strong>For your developer:</strong> No rate limit on the credentials login. <strong>Fix:</strong> Attempts recorded per account; after 5 failures in 15 minutes, login answers 429 with Retry-After, checked before the password.</p>
+    <p class="dev"><strong>For your developer:</strong> No rate limit on the credentials login. <strong>Fix:</strong> After 5 failures in 15 minutes, login answers 429 with Retry-After. The check and the attempt record run in one transaction under a per-account advisory lock, before the password is checked, so a burst of parallel requests is counted one by one.</p>
     
-    <details><summary>The fix: <code>Fix 7: pause login after repeated wrong passwords</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/a5b4429712e0305784f73c350a7ca78a0e0135fa">a5b4429</a>)</summary>
+    <details><summary>The fix: <code>Fix 7: pause login after repeated wrong passwords</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/eea4e76642eb8f1ff81d2971204930115ecf0b89">eea4e76</a>)</summary>
       <pre class="diff"><span class="file">drizzle/0003_login_attempts.sql</span>
 <span class="meta">--- /dev/null</span>
 <span class="meta">+++ b/drizzle/0003_login_attempts.sql</span>
@@ -736,7 +736,7 @@
     </table>
     <p class="dev"><strong>For your developer:</strong> ignoreBuildErrors: true and catch {} in the webhook and cancel routes. <strong>Fix:</strong> Type checking is back in the build and the Sunday bug is fixed. The webhook answers 500 on failure so the provider retries (safe since Fix 3). Cancel no longer reports success when the update fails.</p>
     <p class="now"><strong>To do outside the code:</strong> Check for Sunday bookings and for bookings stuck in 'pending deposit'.</p>
-    <details><summary>The fix: <code>Fix 8: stop hiding errors</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/cd266010e46638085575e18b261654e1cfd5abfc">cd26601</a>)</summary>
+    <details><summary>The fix: <code>Fix 8: stop hiding errors</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/9d93cbbd14e0e92990b3d071a1b411f239da1e9f">9d93cbb</a>)</summary>
       <pre class="diff"><span class="file">next.config.ts</span>
 <span class="meta">--- a/next.config.ts</span>
 <span class="meta">+++ b/next.config.ts</span>
@@ -837,7 +837,7 @@
     </table>
     <p class="dev"><strong>For your developer:</strong> Check-then-insert race; no unique index; emails not normalized. <strong>Fix:</strong> Emails stored lower-case; a unique index on lower(email) decides; the losing request gets 409.</p>
     <p class="now"><strong>To do outside the code:</strong> The migration stops if duplicates already exist. Merge those accounts first.</p>
-    <details><summary>The fix: <code>Fix 4: one account per email, enforced by the database</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/86b16aae09fec7ae2ef8ce7c6810c81b28d41906">86b16aa</a>)</summary>
+    <details><summary>The fix: <code>Fix 4: one account per email, enforced by the database</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/e8d14bb21b524ce63c0c7abef7173fc747d450ed">e8d14bb</a>)</summary>
       <pre class="diff"><span class="file">drizzle/0002_unique_email.sql</span>
 <span class="meta">--- /dev/null</span>
 <span class="meta">+++ b/drizzle/0002_unique_email.sql</span>
@@ -931,7 +931,7 @@
   </article>
   <article class="card">
     <header><h2>Found while fixing</h2></header>
-    <ul><li><strong>Session signing key had a hard-coded fallback</strong> (Critical if deployed without SESSION_SECRET). Required in production, like the other secrets. Test <code>tests/session.test.ts</code>: 1 of 2 fail before, 2 of 2 pass after.</li></ul>
+    <ul><li><strong>Session cookie: hard-coded signing key fallback, no Secure flag</strong> (Critical if deployed without SESSION_SECRET). SESSION_SECRET is required in production, like the other secrets, and the cookie is Secure in production. Test <code>tests/session.test.ts</code>: 2 of 3 fail before, 3 of 3 pass after.</li></ul>
   </article>
   <footer>
     Generated by <code>scripts/build-docs.mjs</code> from <code>report/findings.json</code>,

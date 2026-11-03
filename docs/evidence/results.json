@@ -1,7 +1,7 @@
 {
   "before": {
     "passed": 8,
-    "failed": 28,
+    "failed": 34,
     "files": {
       "tests/app.test.ts": {
         "a customer can log in with the right password and not with a wrong one": "passed",
@@ -11,7 +11,8 @@
       },
       "tests/session.test.ts": {
         "a production server without SESSION_SECRET refuses to create sessions": "failed",
-        "a cookie signed with another secret is not accepted": "passed"
+        "a cookie signed with another secret is not accepted": "passed",
+        "in production the session cookie is HttpOnly and only sent over HTTPS (Secure)": "failed"
       },
       "tests/findings/01-secret-in-browser.test.ts": {
         "no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example)": "failed",
@@ -19,7 +20,7 @@
         "modules that hold secrets are marked server-only, so a future client import fails the build": "failed"
       },
       "tests/findings/02-other-customers-bookings.test.ts": {
-        "Alice cannot list Bob's bookings by changing the userId in the request": "failed",
+        "Alice cannot list Bob's bookings by editing the request": "failed",
         "Alice cannot cancel Bob's booking": "failed",
         "Alice cannot create a booking in Bob's name": "failed",
         "a logged-out visitor gets 401, not someone's bookings": "failed",
@@ -30,7 +31,11 @@
         "a request signed with the wrong secret is rejected": "failed",
         "a replayed request older than 5 minutes is rejected": "failed",
         "the same event delivered twice (provider retry) charges the deposit once": "failed",
-        "two checkouts for the same booking (double click) charge the deposit once": "failed"
+        "two checkouts for the same booking (double click) charge once, even if the provider ignores the idempotency key": "failed",
+        "two checkouts for the same booking arriving at the same moment charge once, without the idempotency key": "failed",
+        "a checkout event for a cancelled booking charges nothing and does not confirm it": "failed",
+        "if the provider's answer is lost after charging, the retry does not charge again (idempotency key)": "failed",
+        "a signed event without booking details gets 400, not 500, and charges nothing": "failed"
       },
       "tests/findings/04-duplicate-signup.test.ts": {
         "two sign-ups with the same email at the same moment create one account": "failed",
@@ -50,6 +55,7 @@
       },
       "tests/findings/07-login-rate-limit.test.ts": {
         "after 5 wrong passwords, login is paused for that account, even with the right password": "failed",
+        "30 wrong passwords sent at the same moment: only 5 are checked, the rest are paused": "failed",
         "the limit is per account, whatever the letter case": "failed",
         "a couple of typos followed by the right password still logs in": "passed"
       },
@@ -62,7 +68,7 @@
     }
   },
   "after": {
-    "passed": 36,
+    "passed": 42,
     "failed": 0,
     "files": {
       "tests/app.test.ts": {
@@ -73,7 +79,8 @@
       },
       "tests/session.test.ts": {
         "a production server without SESSION_SECRET refuses to create sessions": "passed",
-        "a cookie signed with another secret is not accepted": "passed"
+        "a cookie signed with another secret is not accepted": "passed",
+        "in production the session cookie is HttpOnly and only sent over HTTPS (Secure)": "passed"
       },
       "tests/findings/01-secret-in-browser.test.ts": {
         "no secret is exposed through a NEXT_PUBLIC_ variable (source and .env.example)": "passed",
@@ -81,7 +88,7 @@
         "modules that hold secrets are marked server-only, so a future client import fails the build": "passed"
       },
       "tests/findings/02-other-customers-bookings.test.ts": {
-        "Alice cannot list Bob's bookings by changing the userId in the request": "passed",
+        "Alice cannot list Bob's bookings by editing the request": "passed",
         "Alice cannot cancel Bob's booking": "passed",
         "Alice cannot create a booking in Bob's name": "passed",
         "a logged-out visitor gets 401, not someone's bookings": "passed",
@@ -92,7 +99,11 @@
         "a request signed with the wrong secret is rejected": "passed",
         "a replayed request older than 5 minutes is rejected": "passed",
         "the same event delivered twice (provider retry) charges the deposit once": "passed",
-        "two checkouts for the same booking (double click) charge the deposit once": "passed"
+        "two checkouts for the same booking (double click) charge once, even if the provider ignores the idempotency key": "passed",
+        "two checkouts for the same booking arriving at the same moment charge once, without the idempotency key": "passed",
+        "a checkout event for a cancelled booking charges nothing and does not confirm it": "passed",
+        "if the provider's answer is lost after charging, the retry does not charge again (idempotency key)": "passed",
+        "a signed event without booking details gets 400, not 500, and charges nothing": "passed"
       },
       "tests/findings/04-duplicate-signup.test.ts": {
         "two sign-ups with the same email at the same moment create one account": "passed",
@@ -112,6 +123,7 @@
       },
       "tests/findings/07-login-rate-limit.test.ts": {
         "after 5 wrong passwords, login is paused for that account, even with the right password": "passed",
+        "30 wrong passwords sent at the same moment: only 5 are checked, the rest are paused": "passed",
         "the limit is per account, whatever the letter case": "passed",
         "a couple of typos followed by the right password still logs in": "passed"
       },

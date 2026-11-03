@@ -73,10 +73,14 @@ chargeback fees and bad reviews.
 **What was wrong:** the webhook did not verify the provider's signature, and nothing remembered
 which notifications had already been handled.
 
-**Fix:** the signature and its timestamp are checked before anything else; each notification is
-recorded once; a booking is only charged while it is still waiting for its deposit; the charge
-request carries an idempotency key, so the provider itself refuses to charge the same deposit
-twice. **Test:** `tests/findings/03-payment-webhook.test.ts`.
+**Fix:** the signature and its timestamp are checked before anything else; a notification with
+missing details is refused with a clear error instead of crashing (a crash tells the provider to
+keep resending it); each notification is recorded once; a booking is only charged while it is
+still waiting for its deposit; the charge request carries an idempotency key, so the provider
+itself refuses to charge the same deposit twice. **Test:** `tests/findings/03-payment-webhook.test.ts`.
+Some of its tests switch off the provider's idempotency key, so the booking check is proven on
+its own, and one makes the provider's answer get lost after it charged, so the key is proven on
+its own.
 
 ### 4. Appointments were saved at the wrong time (High)
 
@@ -108,7 +112,9 @@ are set by the server; bad input gets a clear message naming the field. **Test:*
 as the server answers. Reused or weak passwords fall quickly.
 
 **Fix:** after 5 wrong passwords in 15 minutes, the account's login pauses and says when to try
-again. **Test:** `tests/findings/07-login-rate-limit.test.ts`.
+again. Each attempt is counted before the password is checked, one at a time per account, so a
+script that sends many guesses at the same moment gets no more than 5 checked. **Test:**
+`tests/findings/07-login-rate-limit.test.ts`.
 
 ### 7. Errors were hidden instead of handled (Medium)
 
@@ -134,7 +140,7 @@ the wrong one.
 
 **Found while fixing:** the key that signs login sessions had a built-in fallback value. A server
 deployed without its own key would accept login cookies anyone can forge. It is now required in
-production (`tests/session.test.ts`).
+production, and in production the cookie is only sent over HTTPS (`tests/session.test.ts`).
 
 ## What I did not fix, and why
 
@@ -162,11 +168,11 @@ production (`tests/session.test.ts`).
 |---|---|---|---|
 | 1 | Secret in `NEXT_PUBLIC_PAYDEMO_SECRET_KEY`, used in a `"use client"` component | `src/app/bookings/pay-deposit-button.tsx` | Fix 1 |
 | 2 | IDOR: `userId` read from query and body; cancel without ownership check | `src/app/api/bookings/**` | Fix 2 |
-| 3 | Webhook: no HMAC verification, no replay window, no event dedup, no idempotency key | `src/app/api/payments/webhook/route.ts` | Fix 3 |
+| 3 | Webhook: no HMAC verification, no replay window, no payload validation, no event dedup, no idempotency key | `src/app/api/payments/webhook/route.ts` | Fix 3 + follow-up |
 | 4 | Check-then-insert race on sign-up; no unique index; emails not normalized | `src/app/api/auth/signup/route.ts` | Fix 4 |
 | 5 | Date and time parsed with `new Date()` in the server's zone; `getHours()` for opening hours | `src/lib/booking-time.ts` | Fix 5 |
 | 6 | `...body` spread into the insert (mass assignment); no schema validation | `src/app/api/bookings/route.ts` | Fix 6 |
-| 7 | No rate limit on credentials login | `src/app/api/auth/login/route.ts` | Fix 7 |
+| 7 | No rate limit on credentials login (the follow-up makes the check atomic: advisory lock per account) | `src/app/api/auth/login/route.ts`, `src/lib/login-limit.ts` | Fix 7 + follow-up |
 | 8 | `ignoreBuildErrors: true` hiding `closedDays.includes(day.toString())`; `catch {}` returning 200 | `next.config.ts`, webhook, cancel | Fix 8 |
 
 How to check the work:
@@ -181,4 +187,7 @@ git log --oneline vibe-coded..main   # one commit per fix, each naming its test
 
 Each fix commit changes the code for one finding only and names the test that proves it. The
 tests call the real route handlers against a real Postgres engine (PGlite, in memory), not mocks
-of the database.
+of the database. Two limits of that engine: it runs one transaction at a time, so the row lock in
+the webhook and the per-account lock in the login are not exercised by parallel connections
+here (they matter on a Postgres server); and with this app's single event type, the booking
+check also stops a repeated event, so no test isolates the event id table.

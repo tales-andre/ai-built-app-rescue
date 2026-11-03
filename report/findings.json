@@ -34,7 +34,7 @@
       "what_could_happen": "The address that receives payment notifications accepted messages from anyone. Payment providers also resend notifications they are not sure arrived; each resend charged the customer's deposit again. Double charges mean refunds, chargeback fees and angry reviews.",
       "dev_title": "Webhook without signature verification or idempotency",
       "where": "src/app/api/payments/webhook/route.ts",
-      "fix": "HMAC signature and timestamp checked on the raw body; each event id recorded once (processed_events); the booking row is locked and only charged while it waits for a deposit; the charge carries an idempotency key.",
+      "fix": "HMAC signature and timestamp checked on the raw body; the event is validated with zod (a malformed one gets 400, not a 500 that the provider would retry forever); each event id recorded once (processed_events); the booking row is locked and only charged while it waits for a deposit; the charge carries an idempotency key.",
       "action_now": "Compare deposits in the provider dashboard with bookings; refund any duplicates.",
       "test": "tests/findings/03-payment-webhook.test.ts",
       "commit": "Fix 3:"
@@ -70,7 +70,7 @@
       "what_could_happen": "A script could try passwords against a customer's account as fast as the server answers. Reused or weak passwords fall quickly.",
       "dev_title": "No rate limit on the credentials login",
       "where": "src/app/api/auth/login/route.ts",
-      "fix": "Attempts recorded per account; after 5 failures in 15 minutes, login answers 429 with Retry-After, checked before the password.",
+      "fix": "After 5 failures in 15 minutes, login answers 429 with Retry-After. The check and the attempt record run in one transaction under a per-account advisory lock, before the password is checked, so a burst of parallel requests is counted one by one.",
       "action_now": "None required.",
       "test": "tests/findings/07-login-rate-limit.test.ts",
       "commit": "Fix 7:"
@@ -102,9 +102,9 @@
   ],
   "extra": [
     {
-      "title": "Session signing key had a hard-coded fallback",
+      "title": "Session cookie: hard-coded signing key fallback, no Secure flag",
       "risk": "Critical if deployed without SESSION_SECRET",
-      "fix": "Required in production, like the other secrets.",
+      "fix": "SESSION_SECRET is required in production, like the other secrets, and the cookie is Secure in production.",
       "test": "tests/session.test.ts",
       "commit": "Require SESSION_SECRET"
     }

@@ -1,8 +1,8 @@
 
 Running 3 tests using 1 worker
 
-  ok 1 e2e\bundle.spec.ts:16:5 › the browser bundle does not contain the payment secret key (160ms)
-  ok 2 e2e\customer-flow.spec.ts:5:5 › a customer signs up, books a haircut and pays the deposit (7.8s)
-  ok 3 e2e\other-customers-bookings.spec.ts:5:5 › a logged-in customer cannot read or cancel another customer's booking (2.0s)
+  ok 1 e2e\bundle.spec.ts:16:5 › the browser bundle does not contain the payment secret key (127ms)
+  ok 2 e2e\customer-flow.spec.ts:4:5 › a customer signs up, books a haircut and pays the deposit (8.4s)
+  ok 3 e2e\other-customers-bookings.spec.ts:4:5 › a logged-in customer cannot read or cancel another customer's booking (2.8s)
 
-  3 passed (14.9s)
+  3 passed (16.1s)
