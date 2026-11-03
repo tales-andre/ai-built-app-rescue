@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 
 const REPO_URL = "https://github.com/tales-andre/ai-built-app-rescue";
-const MAX_DIFF_LINES = 90;
+const MAX_DIFF_LINES = 140;
 
 const { findings, extra } = JSON.parse(readFileSync("report/findings.json", "utf8"));
 const results = JSON.parse(readFileSync("docs/evidence/results.json", "utf8"));
@@ -19,7 +19,11 @@ const commits = git("log", "--format=%H%x09%s", "vibe-coded..HEAD")
   .trim()
   .split("\n")
   .map((l) => l.split("\t"));
-const findCommit = (prefix) => commits.find(([, s]) => s.startsWith(prefix));
+// "Fix 7:" also picks up its follow-ups ("Fix 7, follow-up: ..."), oldest first.
+const findCommits = (prefix) => {
+  const base = prefix.replace(/:$/, "");
+  return commits.filter(([, s]) => s.startsWith(prefix) || s.startsWith(`${base}, follow-up`)).reverse();
+};
 
 function diffFor(sha) {
   const raw = git("show", "--format=", "--unified=2", sha, "--", "src", "next.config.ts", "drizzle/*.sql", ".env.example");
@@ -46,11 +50,10 @@ const mark = (s) =>
   s === "passed" ? '<span class="ok">pass</span>' : s === "failed" ? '<span class="bad">fail</span>' : '<span class="na">n/a</span>';
 
 function card(f) {
-  const [sha, subject] = findCommit(f.commit) ?? [];
+  const fixes = findCommits(f.commit);
   const rows = testRows(f.test);
   const failingBefore = rows.filter((r) => r.before === "failed").length;
   const passingAfter = rows.filter((r) => r.after === "passed").length;
-  const d = sha ? diffFor(sha) : { html: "", more: 0 };
   return `
   <article class="card" id="finding-${f.id}">
     <header>
@@ -69,8 +72,13 @@ function card(f) {
     </table>
     <p class="dev"><strong>For your developer:</strong> ${esc(f.dev_title)}. <strong>Fix:</strong> ${esc(f.fix)}</p>
     ${f.action_now && f.action_now !== "None required." ? `<p class="now"><strong>To do outside the code:</strong> ${esc(f.action_now)}</p>` : ""}
-    ${sha ? `<details><summary>The fix: <code>${esc(subject)}</code> (<a href="${REPO_URL}/commit/${sha}">${sha.slice(0, 7)}</a>)</summary>
-      <pre class="diff">${d.html}</pre>${d.more ? `<p class="more">${d.more} more lines in the commit.</p>` : ""}</details>` : ""}
+    ${fixes
+      .map(([sha, subject], i) => {
+        const d = diffFor(sha);
+        return `<details><summary>${i ? "Follow-up" : "The fix"}: <code>${esc(subject)}</code> (<a href="${REPO_URL}/commit/${sha}">${sha.slice(0, 7)}</a>)</summary>
+      <pre class="diff">${d.html}</pre>${d.more ? `<p class="more">${d.more} more lines in the commit.</p>` : ""}</details>`;
+      })
+      .join("")}
   </article>`;
 }
 

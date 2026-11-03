@@ -190,7 +190,43 @@
 <span class="meta">--- a/src/lib/paydemo.ts</span>
 <span class="meta">+++ b/src/lib/paydemo.ts</span>
 <span class="hunk">@@ -1,2 +1,5 @@</span>
-<span class="add">+import &quot;server-only&quot;;</span></pre><p class="more">36 more lines in the commit.</p></details>
+<span class="add">+import &quot;server-only&quot;;</span>
+<span class="add">+import { serverSecret } from &quot;./env&quot;;</span>
+<span class="add">+</span>
+<span class=""> // Client for &quot;PayDemo&quot;, a FICTIONAL payment provider used only in this demo.</span>
+<span class=""> // The provider side is simulated in-process: charges are kept in memory, and</span>
+<span class="hunk">@@ -42,4 +45,23 @@ export async function charge(params: {</span>
+<span class=""> }</span>
+<span class=""> </span>
+<span class="add">+/**</span>
+<span class="add">+ * Starts the provider's hosted checkout for a booking deposit. Runs on the server</span>
+<span class="add">+ * only: it is the one place that uses the secret key. PAYDEMO_API_URL defaults to</span>
+<span class="add">+ * the in-app simulator.</span>
+<span class="add">+ */</span>
+<span class="add">+export async function createCheckout(bookingId: number, origin: string): Promise&lt;{ status: string }&gt; {</span>
+<span class="add">+  const base = process.env.PAYDEMO_API_URL ?? `${origin}/api/paydemo-sim`;</span>
+<span class="add">+  const res = await fetch(`${base}/checkout`, {</span>
+<span class="add">+    method: &quot;POST&quot;,</span>
+<span class="add">+    headers: {</span>
+<span class="add">+      &quot;content-type&quot;: &quot;application/json&quot;,</span>
+<span class="add">+      authorization: `Bearer ${serverSecret(&quot;PAYDEMO_SECRET_KEY&quot;, &quot;sk_demo_51BrightsideDoNotShip&quot;)}`,</span>
+<span class="add">+    },</span>
+<span class="add">+    body: JSON.stringify({ bookingId }),</span>
+<span class="add">+  });</span>
+<span class="add">+  if (!res.ok) throw new Error(`PayDemo checkout failed: ${res.status}`);</span>
+<span class="add">+  return res.json();</span>
+<span class="add">+}</span>
+<span class="add">+</span>
+<span class=""> // --- simulator controls (demo and tests only) ---</span>
+<span class=""> export function listCharges(): Charge[] {</span>
+<span class="file">src/lib/session.ts</span>
+<span class="meta">--- a/src/lib/session.ts</span>
+<span class="meta">+++ b/src/lib/session.ts</span>
+<span class="hunk">@@ -1,2 +1,3 @@</span>
+<span class="add">+import &quot;server-only&quot;;</span>
+<span class=""> import { createHmac, randomBytes, scrypt as scryptCb, timingSafeEqual } from &quot;node:crypto&quot;;</span>
+<span class=""> import { promisify } from &quot;node:util&quot;;</span>
+<span class=""> </span></pre></details>
   </article>
 
   <article class="card" id="finding-2">
@@ -300,7 +336,14 @@
 <span class=""> </span>
 <span class="">   async function cancel(id: number) {</span>
 <span class="del">-    await fetch(`/api/bookings/${id}/cancel`, {</span>
-<span class="del">-      method: &quot;POST&quot;,</span></pre><p class="more">7 more lines in the commit.</p></details>
+<span class="del">-      method: &quot;POST&quot;,</span>
+<span class="del">-      headers: { &quot;content-type&quot;: &quot;application/json&quot; },</span>
+<span class="del">-      body: JSON.stringify({ userId: user?.id }),</span>
+<span class="del">-    });</span>
+<span class="add">+    await fetch(`/api/bookings/${id}/cancel`, { method: &quot;POST&quot; });</span>
+<span class="">     load();</span>
+<span class="">   }</span>
+<span class=""> </span></pre></details>
   </article>
 
   <article class="card" id="finding-3">
@@ -410,7 +453,164 @@
 <span class=""> </span>
 <span class="add">+// Webhook events already handled, so a retried delivery is a no-op.</span>
 <span class="add">+export const processedEvents = pgTable(&quot;processed_events&quot;, {</span>
-<span class="add">+  id: text(&quot;id&quot;).primaryKey(),</span></pre><p class="more">39 more lines in the commit.</p></details>
+<span class="add">+  id: text(&quot;id&quot;).primaryKey(),</span>
+<span class="add">+  receivedAt: timestamp(&quot;received_at&quot;, { withTimezone: true }).notNull().defaultNow(),</span>
+<span class="add">+});</span>
+<span class="add">+</span>
+<span class=""> export type User = typeof users.$inferSelect;</span>
+<span class=""> export type Service = typeof services.$inferSelect;</span>
+<span class="file">src/lib/webhook-signature.ts</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/src/lib/webhook-signature.ts</span>
+<span class="hunk">@@ -0,0 +1,29 @@</span>
+<span class="add">+import &quot;server-only&quot;;</span>
+<span class="add">+import { createHmac, timingSafeEqual } from &quot;node:crypto&quot;;</span>
+<span class="add">+</span>
+<span class="add">+/**</span>
+<span class="add">+ * Verifies a PayDemo webhook signature. Header format:</span>
+<span class="add">+ *   paydemo-signature: t=&lt;unix seconds&gt;,v1=&lt;hex HMAC-SHA256 of &quot;&lt;t&gt;.&lt;raw body&gt;&quot;&gt;</span>
+<span class="add">+ * The timestamp is part of the signed text, so an old request cannot be replayed</span>
+<span class="add">+ * with a fresh time. Must be called with the raw body, before JSON parsing.</span>
+<span class="add">+ */</span>
+<span class="add">+export function verifyPayDemoSignature(</span>
+<span class="add">+  rawBody: string,</span>
+<span class="add">+  header: string | null,</span>
+<span class="add">+  secret: string,</span>
+<span class="add">+  { toleranceSeconds = 300, now = Date.now() } = {},</span>
+<span class="add">+): boolean {</span>
+<span class="add">+  if (!header) return false;</span>
+<span class="add">+  const parts = Object.fromEntries(</span>
+<span class="add">+    header.split(&quot;,&quot;).map((kv) =&gt; {</span>
+<span class="add">+      const i = kv.indexOf(&quot;=&quot;);</span>
+<span class="add">+      return [kv.slice(0, i).trim(), kv.slice(i + 1).trim()];</span>
+<span class="add">+    }),</span>
+<span class="add">+  );</span>
+<span class="add">+  const t = Number(parts.t);</span>
+<span class="add">+  if (!Number.isInteger(t) || !/^[0-9a-f]{64}$/.test(parts.v1 ?? &quot;&quot;)) return false;</span>
+<span class="add">+  if (Math.abs(now / 1000 - t) &gt; toleranceSeconds) return false;</span>
+<span class="add">+</span>
+<span class="add">+  const expected = createHmac(&quot;sha256&quot;, secret).update(`${t}.${rawBody}`).digest();</span>
+<span class="add">+  return timingSafeEqual(expected, Buffer.from(parts.v1, &quot;hex&quot;));</span>
+<span class="add">+}</span>
+<span class=""> </span></pre></details><details><summary>Follow-up: <code>Fix 3, follow-up: validate webhook events and test each layer on its own</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/6976f5ad591bb2b39ce94df952c08c6df93c483f">6976f5a</a>)</summary>
+      <pre class="diff"><span class="file">src/app/api/payments/webhook/route.ts</span>
+<span class="meta">--- a/src/app/api/payments/webhook/route.ts</span>
+<span class="meta">+++ b/src/app/api/payments/webhook/route.ts</span>
+<span class="hunk">@@ -4,4 +4,5 @@ import { bookings, processedEvents, services } from &quot;@/db/schema&quot;;</span>
+<span class=""> import { serverSecret } from &quot;@/lib/env&quot;;</span>
+<span class=""> import { charge } from &quot;@/lib/paydemo&quot;;</span>
+<span class="add">+import { CheckoutCompletedEvent, PayDemoEvent } from &quot;@/lib/validation&quot;;</span>
+<span class=""> import { verifyPayDemoSignature } from &quot;@/lib/webhook-signature&quot;;</span>
+<span class=""> </span>
+<span class="hunk">@@ -16,46 +17,56 @@ export async function POST(req: Request) {</span>
+<span class="">   }</span>
+<span class=""> </span>
+<span class="del">-  let event;</span>
+<span class="add">+  // 2. A signed event with a missing or malformed field cannot be processed, now</span>
+<span class="add">+  //    or on a retry: answer 400, not 500 (a 500 means &quot;try again later&quot;).</span>
+<span class="add">+  let json: unknown;</span>
+<span class="">   try {</span>
+<span class="del">-    event = JSON.parse(raw);</span>
+<span class="add">+    json = JSON.parse(raw);</span>
+<span class="">   } catch {</span>
+<span class="">     return Response.json({ error: &quot;Invalid JSON&quot; }, { status: 400 });</span>
+<span class="">   }</span>
+<span class="add">+  const base = PayDemoEvent.safeParse(json);</span>
+<span class="add">+  if (base.success &amp;&amp; base.data.type !== &quot;checkout.completed&quot;) {</span>
+<span class="add">+    return Response.json({ received: true, ignored: base.data.type });</span>
+<span class="add">+  }</span>
+<span class="add">+  const parsed = CheckoutCompletedEvent.safeParse(json);</span>
+<span class="add">+  if (!parsed.success) {</span>
+<span class="add">+    console.error(&quot;PayDemo webhook: invalid event&quot;, { error: parsed.error.message });</span>
+<span class="add">+    return Response.json({ error: &quot;Invalid event&quot; }, { status: 400 });</span>
+<span class="add">+  }</span>
+<span class="add">+  const event = parsed.data;</span>
+<span class=""> </span>
+<span class="">   try {</span>
+<span class="del">-    if (event.type === &quot;checkout.completed&quot;) {</span>
+<span class="del">-      const bookingId = Number(event.data.bookingId);</span>
+<span class="del">-      const db = await getDb();</span>
+<span class="add">+    const { bookingId, paymentMethod } = event.data;</span>
+<span class="add">+    const db = await getDb();</span>
+<span class=""> </span>
+<span class="del">-      await db.transaction(async (tx) =&gt; {</span>
+<span class="del">-        // 2. Providers deliver &quot;at least once&quot;. Record the event id; a repeat is a no-op.</span>
+<span class="del">-        const fresh = await tx.insert(processedEvents).values({ id: String(event.id) }).onConflictDoNothing().returning();</span>
+<span class="del">-        if (fresh.length === 0) return;</span>
+<span class="add">+    await db.transaction(async (tx) =&gt; {</span>
+<span class="add">+      // 3. Providers deliver &quot;at least once&quot;. Record the event id; a repeat is a no-op.</span>
+<span class="add">+      const fresh = await tx.insert(processedEvents).values({ id: event.id }).onConflictDoNothing().returning();</span>
+<span class="add">+      if (fresh.length === 0) return;</span>
+<span class=""> </span>
+<span class="del">-        // 3. Lock the booking and only charge one that still waits for its deposit</span>
+<span class="del">-        //    (a second checkout for the same booking, or a cancelled one, is skipped).</span>
+<span class="del">-        const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for(&quot;update&quot;);</span>
+<span class="del">-        if (!booking || booking.status !== &quot;pending_deposit&quot;) return;</span>
+<span class="del">-        const [service] = await tx.select().from(services).where(eq(services.id, booking.serviceId));</span>
+<span class="add">+      // 4. Lock the booking and only charge one that still waits for its deposit</span>
+<span class="add">+      //    (a second checkout for the same booking, or a cancelled one, is skipped).</span>
+<span class="add">+      const [booking] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for(&quot;update&quot;);</span>
+<span class="add">+      if (!booking || booking.status !== &quot;pending_deposit&quot;) return;</span>
+<span class="add">+      const [service] = await tx.select().from(services).where(eq(services.id, booking.serviceId));</span>
+<span class=""> </span>
+<span class="del">-        // 4. The idempotency key makes the provider return the first charge if this</span>
+<span class="del">-        //    exact deposit is ever requested again.</span>
+<span class="del">-        const deposit = await charge({</span>
+<span class="del">-          amountCents: service.depositCents,</span>
+<span class="del">-          paymentMethod: event.data.paymentMethod,</span>
+<span class="del">-          description: `Deposit for booking ${bookingId}`,</span>
+<span class="del">-          idempotencyKey: `deposit-booking-${bookingId}`,</span>
+<span class="del">-        });</span>
+<span class="del">-</span>
+<span class="del">-        await tx</span>
+<span class="del">-          .update(bookings)</span>
+<span class="del">-          .set({ status: &quot;confirmed&quot;, depositChargeId: deposit.id })</span>
+<span class="del">-          .where(eq(bookings.id, bookingId));</span>
+<span class="add">+      // 5. The idempotency key makes the provider return the first charge if this</span>
+<span class="add">+      //    exact deposit is ever requested again.</span>
+<span class="add">+      const deposit = await charge({</span>
+<span class="add">+        amountCents: service.depositCents,</span>
+<span class="add">+        paymentMethod,</span>
+<span class="add">+        description: `Deposit for booking ${bookingId}`,</span>
+<span class="add">+        idempotencyKey: `deposit-booking-${bookingId}`,</span>
+<span class="">       });</span>
+<span class="del">-    }</span>
+<span class="add">+</span>
+<span class="add">+      await tx</span>
+<span class="add">+        .update(bookings)</span>
+<span class="add">+        .set({ status: &quot;confirmed&quot;, depositChargeId: deposit.id })</span>
+<span class="add">+        .where(eq(bookings.id, bookingId));</span>
+<span class="add">+    });</span>
+<span class="">   } catch (err) {</span>
+<span class="">     // Answer 500 so PayDemo retries later. Nothing was recorded (the transaction</span>
+<span class="">     // rolled back) and the charge has an idempotency key, so a retry is safe.</span>
+<span class="del">-    console.error(&quot;PayDemo webhook failed&quot;, { eventId: event?.id, error: String(err) });</span>
+<span class="add">+    console.error(&quot;PayDemo webhook failed&quot;, { eventId: event.id, error: String(err) });</span>
+<span class="">     return Response.json({ error: &quot;Processing failed, please retry&quot; }, { status: 500 });</span>
+<span class="">   }</span>
+<span class="file">src/lib/validation.ts</span>
+<span class="meta">--- a/src/lib/validation.ts</span>
+<span class="meta">+++ b/src/lib/validation.ts</span>
+<span class="hunk">@@ -33,2 +33,18 @@ export async function parseBody&lt;S extends z.ZodType&gt;(</span>
+<span class="">   return { data: result.data };</span>
+<span class=""> }</span>
+<span class="add">+</span>
+<span class="add">+// A PayDemo webhook event, checked after its signature. Every event has an id and</span>
+<span class="add">+// a type; other types are accepted and ignored.</span>
+<span class="add">+export const PayDemoEvent = z.object({</span>
+<span class="add">+  id: z.string().min(1).max(200),</span>
+<span class="add">+  type: z.string().min(1).max(100),</span>
+<span class="add">+});</span>
+<span class="add">+</span>
+<span class="add">+// A checkout.completed event must say which booking it is for.</span>
+<span class="add">+export const CheckoutCompletedEvent = PayDemoEvent.extend({</span>
+<span class="add">+  type: z.literal(&quot;checkout.completed&quot;),</span>
+<span class="add">+  data: z.object({</span>
+<span class="add">+    bookingId: z.coerce.number().int().positive(),</span>
+<span class="add">+    paymentMethod: z.string().min(1).max(200),</span>
+<span class="add">+  }),</span>
+<span class="add">+});</span>
+<span class=""> </span></pre></details>
   </article>
 
   <article class="card" id="finding-5">
@@ -606,7 +806,57 @@
 <span class="">     .returning();</span>
 <span class="file">src/app/book/page.tsx</span>
 <span class="meta">--- a/src/app/book/page.tsx</span>
-<span class="meta">+++ b/src/app/book/page.tsx</span></pre><p class="more">79 more lines in the commit.</p></details>
+<span class="meta">+++ b/src/app/book/page.tsx</span>
+<span class="hunk">@@ -2,4 +2,5 @@</span>
+<span class=""> import { useRouter } from &quot;next/navigation&quot;;</span>
+<span class=""> import { useEffect, useState } from &quot;react&quot;;</span>
+<span class="add">+import { firstError } from &quot;@/lib/form-errors&quot;;</span>
+<span class=""> </span>
+<span class=""> type Service = { id: number; name: string; durationMin: number; priceCents: number };</span>
+<span class="hunk">@@ -26,5 +27,5 @@ export default function BookPage() {</span>
+<span class="">     if (res.status === 401) return router.push(&quot;/login&quot;);</span>
+<span class="">     const data = await res.json();</span>
+<span class="del">-    if (!res.ok) return setError(data.error ?? &quot;Could not book&quot;);</span>
+<span class="add">+    if (!res.ok) return setError(firstError(data) ?? &quot;Could not book&quot;);</span>
+<span class="">     router.push(&quot;/bookings&quot;);</span>
+<span class="">   }</span>
+<span class="file">src/app/signup/page.tsx</span>
+<span class="meta">--- a/src/app/signup/page.tsx</span>
+<span class="meta">+++ b/src/app/signup/page.tsx</span>
+<span class="hunk">@@ -2,4 +2,5 @@</span>
+<span class=""> import { useRouter } from &quot;next/navigation&quot;;</span>
+<span class=""> import { useState } from &quot;react&quot;;</span>
+<span class="add">+import { firstError } from &quot;@/lib/form-errors&quot;;</span>
+<span class=""> </span>
+<span class=""> export default function SignupPage() {</span>
+<span class="hunk">@@ -16,5 +17,5 @@ export default function SignupPage() {</span>
+<span class="">     });</span>
+<span class="">     const data = await res.json();</span>
+<span class="del">-    if (!res.ok) return setError(data.error ?? &quot;Sign-up failed&quot;);</span>
+<span class="add">+    if (!res.ok) return setError(firstError(data) ?? &quot;Sign-up failed&quot;);</span>
+<span class="">     localStorage.setItem(&quot;user&quot;, JSON.stringify(data.user));</span>
+<span class="">     router.push(&quot;/bookings&quot;);</span>
+<span class="file">src/lib/form-errors.ts</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/src/lib/form-errors.ts</span>
+<span class="hunk">@@ -0,0 +1,7 @@</span>
+<span class="add">+/** First human-readable message from an API error response. */</span>
+<span class="add">+export function firstError(data: { error?: string; fieldErrors?: Record&lt;string, string[] | undefined&gt; }) {</span>
+<span class="add">+  for (const [field, messages] of Object.entries(data.fieldErrors ?? {})) {</span>
+<span class="add">+    if (messages?.length) return `${field}: ${messages[0]}`;</span>
+<span class="add">+  }</span>
+<span class="add">+  return data.error;</span>
+<span class="add">+}</span>
+<span class="file">src/lib/validation.ts</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/src/lib/validation.ts</span>
+<span class="hunk">@@ -0,0 +1,34 @@</span>
+<span class="add">+import { z } from &quot;zod&quot;;</span>
+<span class="add">+</span>
+<span class="add">+export const SignupInput = z.object({</span>
+<span class="add">+  email: z.email().max(254),</span>
+<span class="add">+  password: z.string().min(8, &quot;Use at least 8 characters&quot;).max(200),</span>
+<span class="add">+  name: z.string().trim().max(100).optional(),</span></pre><p class="more">29 more lines in the commit.</p></details>
   </article>
 
   <article class="card" id="finding-7">
@@ -716,7 +966,140 @@
 <span class="add">+</span>
 <span class="add">+export const MAX_FAILURES = 5;</span>
 <span class="add">+export const WINDOW_MS = 15 * 60 * 1000;</span>
-<span class="add">+</span></pre><p class="more">25 more lines in the commit.</p></details>
+<span class="add">+</span>
+<span class="add">+/**</span>
+<span class="add">+ * Seconds until this account may try again; 0 if allowed now.</span>
+<span class="add">+ * Blocked while there are MAX_FAILURES failed attempts in the last 15 minutes</span>
+<span class="add">+ * with no successful login after them.</span>
+<span class="add">+ */</span>
+<span class="add">+export async function secondsUntilLoginAllowed(db: Db, email: string, now = new Date()): Promise&lt;number&gt; {</span>
+<span class="add">+  const since = new Date(now.getTime() - WINDOW_MS);</span>
+<span class="add">+  const recent = await db</span>
+<span class="add">+    .select({ succeeded: loginAttempts.succeeded, createdAt: loginAttempts.createdAt })</span>
+<span class="add">+    .from(loginAttempts)</span>
+<span class="add">+    .where(and(eq(loginAttempts.email, email), gt(loginAttempts.createdAt, since)))</span>
+<span class="add">+    .orderBy(desc(loginAttempts.createdAt))</span>
+<span class="add">+    .limit(MAX_FAILURES);</span>
+<span class="add">+  const lastSuccess = recent.findIndex((a) =&gt; a.succeeded);</span>
+<span class="add">+  const failures = lastSuccess === -1 ? recent : recent.slice(0, lastSuccess);</span>
+<span class="add">+  if (failures.length &lt; MAX_FAILURES) return 0;</span>
+<span class="add">+  // Allowed again when the oldest of these failures leaves the window.</span>
+<span class="add">+  const oldest = failures[failures.length - 1].createdAt.getTime();</span>
+<span class="add">+  return Math.max(1, Math.ceil((oldest + WINDOW_MS - now.getTime()) / 1000));</span>
+<span class="add">+}</span>
+<span class="add">+</span>
+<span class="add">+export async function recordLoginAttempt(db: Db, email: string, ip: string | null, succeeded: boolean) {</span>
+<span class="add">+  await db.insert(loginAttempts).values({ email, ip, succeeded });</span>
+<span class="add">+}</span>
+<span class=""> </span></pre></details><details><summary>Follow-up: <code>Fix 7, follow-up: count each login attempt before the password check</code> (<a href="https://github.com/tales-andre/ai-built-app-rescue/commit/493b666ccdd13b7244d71be759f11b3e7b1be268">493b666</a>)</summary>
+      <pre class="diff"><span class="file">src/app/api/auth/login/route.ts</span>
+<span class="meta">--- a/src/app/api/auth/login/route.ts</span>
+<span class="meta">+++ b/src/app/api/auth/login/route.ts</span>
+<span class="hunk">@@ -2,5 +2,5 @@ import { eq } from &quot;drizzle-orm&quot;;</span>
+<span class=""> import { getDb } from &quot;@/db&quot;;</span>
+<span class=""> import { users } from &quot;@/db/schema&quot;;</span>
+<span class="del">-import { recordLoginAttempt, secondsUntilLoginAllowed } from &quot;@/lib/login-limit&quot;;</span>
+<span class="add">+import { markLoginSucceeded, reserveLoginAttempt } from &quot;@/lib/login-limit&quot;;</span>
+<span class=""> import { sessionCookie, verifyPassword } from &quot;@/lib/session&quot;;</span>
+<span class=""> import { LoginInput, parseBody } from &quot;@/lib/validation&quot;;</span>
+<span class="hunk">@@ -13,10 +13,11 @@ export async function POST(req: Request) {</span>
+<span class="">   const db = await getDb();</span>
+<span class=""> </span>
+<span class="del">-  // Checked before the password, so a paused account gives nothing away.</span>
+<span class="del">-  const wait = await secondsUntilLoginAllowed(db, email);</span>
+<span class="del">-  if (wait &gt; 0) {</span>
+<span class="add">+  // Checked and counted before the password, in one locked step: a paused account</span>
+<span class="add">+  // gives nothing away, and parallel requests cannot slip past the limit.</span>
+<span class="add">+  const { wait, attemptId } = await reserveLoginAttempt(db, email, ip);</span>
+<span class="add">+  if (wait &gt; 0 || attemptId === null) {</span>
+<span class="">     return Response.json(</span>
+<span class="">       { error: &quot;Too many attempts. Try again in a few minutes.&quot; },</span>
+<span class="del">-      { status: 429, headers: { &quot;Retry-After&quot;: String(wait) } },</span>
+<span class="add">+      { status: 429, headers: { &quot;Retry-After&quot;: String(Math.max(wait, 1)) } },</span>
+<span class="">     );</span>
+<span class="">   }</span>
+<span class="hunk">@@ -24,8 +25,8 @@ export async function POST(req: Request) {</span>
+<span class="">   const [user] = await db.select().from(users).where(eq(users.email, email));</span>
+<span class="">   const ok = !!user &amp;&amp; (await verifyPassword(data.password, user.passwordHash));</span>
+<span class="del">-  await recordLoginAttempt(db, email, ip, ok);</span>
+<span class="">   if (!ok) {</span>
+<span class="">     return Response.json({ error: &quot;Invalid email or password&quot; }, { status: 401 });</span>
+<span class="">   }</span>
+<span class="add">+  await markLoginSucceeded(db, attemptId);</span>
+<span class=""> </span>
+<span class="">   return Response.json(</span>
+<span class="file">src/lib/login-limit.ts</span>
+<span class="meta">--- a/src/lib/login-limit.ts</span>
+<span class="meta">+++ b/src/lib/login-limit.ts</span>
+<span class="hunk">@@ -1,4 +1,4 @@</span>
+<span class=""> import &quot;server-only&quot;;</span>
+<span class="del">-import { and, desc, eq, gt } from &quot;drizzle-orm&quot;;</span>
+<span class="add">+import { and, desc, eq, gt, sql } from &quot;drizzle-orm&quot;;</span>
+<span class=""> import type { Db } from &quot;@/db&quot;;</span>
+<span class=""> import { loginAttempts } from &quot;@/db/schema&quot;;</span>
+<span class="hunk">@@ -7,4 +7,6 @@ export const MAX_FAILURES = 5;</span>
+<span class=""> export const WINDOW_MS = 15 * 60 * 1000;</span>
+<span class=""> </span>
+<span class="add">+type Tx = Parameters&lt;Parameters&lt;Db[&quot;transaction&quot;]&gt;[0]&gt;[0];</span>
+<span class="add">+</span>
+<span class=""> /**</span>
+<span class="">  * Seconds until this account may try again; 0 if allowed now.</span>
+<span class="hunk">@@ -12,11 +14,13 @@ export const WINDOW_MS = 15 * 60 * 1000;</span>
+<span class="">  * with no successful login after them.</span>
+<span class="">  */</span>
+<span class="del">-export async function secondsUntilLoginAllowed(db: Db, email: string, now = new Date()): Promise&lt;number&gt; {</span>
+<span class="add">+async function secondsUntilLoginAllowed(tx: Tx, email: string, now: Date): Promise&lt;number&gt; {</span>
+<span class="">   const since = new Date(now.getTime() - WINDOW_MS);</span>
+<span class="del">-  const recent = await db</span>
+<span class="add">+  const recent = await tx</span>
+<span class="">     .select({ succeeded: loginAttempts.succeeded, createdAt: loginAttempts.createdAt })</span>
+<span class="">     .from(loginAttempts)</span>
+<span class="">     .where(and(eq(loginAttempts.email, email), gt(loginAttempts.createdAt, since)))</span>
+<span class="del">-    .orderBy(desc(loginAttempts.createdAt))</span>
+<span class="add">+    // Insertion order (the id), not the timestamp: concurrent transactions can</span>
+<span class="add">+    // start at the same instant.</span>
+<span class="add">+    .orderBy(desc(loginAttempts.id))</span>
+<span class="">     .limit(MAX_FAILURES);</span>
+<span class="">   const lastSuccess = recent.findIndex((a) =&gt; a.succeeded);</span>
+<span class="hunk">@@ -24,9 +28,34 @@ export async function secondsUntilLoginAllowed(db: Db, email: string, now = new</span>
+<span class="">   if (failures.length &lt; MAX_FAILURES) return 0;</span>
+<span class="">   // Allowed again when the oldest of these failures leaves the window.</span>
+<span class="del">-  const oldest = failures[failures.length - 1].createdAt.getTime();</span>
+<span class="add">+  const oldest = Math.min(...failures.map((f) =&gt; f.createdAt.getTime()));</span>
+<span class="">   return Math.max(1, Math.ceil((oldest + WINDOW_MS - now.getTime()) / 1000));</span>
+<span class=""> }</span>
+<span class=""> </span>
+<span class="del">-export async function recordLoginAttempt(db: Db, email: string, ip: string | null, succeeded: boolean) {</span>
+<span class="del">-  await db.insert(loginAttempts).values({ email, ip, succeeded });</span>
+<span class="add">+/**</span>
+<span class="add">+ * Checks the limit and, if the account may try, records the attempt as failed</span>
+<span class="add">+ * BEFORE the password is checked. Both steps run in one transaction holding a</span>
+<span class="add">+ * per-account lock, so requests sent at the same moment are counted one after</span>
+<span class="add">+ * the other: a burst of parallel guesses cannot all get past the check.</span>
+<span class="add">+ * The caller marks the attempt as succeeded when the password is right.</span>
+<span class="add">+ */</span>
+<span class="add">+export async function reserveLoginAttempt(</span>
+<span class="add">+  db: Db,</span>
+<span class="add">+  email: string,</span>
+<span class="add">+  ip: string | null,</span>
+<span class="add">+  now = new Date(),</span>
+<span class="add">+): Promise&lt;{ wait: number; attemptId: number | null }&gt; {</span>
+<span class="add">+  return db.transaction(async (tx) =&gt; {</span>
+<span class="add">+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${&quot;login:&quot; + email}::text))`);</span>
+<span class="add">+    const wait = await secondsUntilLoginAllowed(tx, email, now);</span>
+<span class="add">+    if (wait &gt; 0) return { wait, attemptId: null };</span>
+<span class="add">+    const [row] = await tx</span>
+<span class="add">+      .insert(loginAttempts)</span>
+<span class="add">+      .values({ email, ip, succeeded: false })</span>
+<span class="add">+      .returning({ id: loginAttempts.id });</span>
+<span class="add">+    return { wait: 0, attemptId: row.id };</span>
+<span class="add">+  });</span>
+<span class="add">+}</span>
+<span class="add">+</span>
+<span class="add">+export async function markLoginSucceeded(db: Db, attemptId: number) {</span>
+<span class="add">+  await db.update(loginAttempts).set({ succeeded: true }).where(eq(loginAttempts.id, attemptId));</span>
+<span class=""> }</span>
+<span class=""> </span></pre></details>
   </article>
 
   <article class="card" id="finding-8">
@@ -927,7 +1310,25 @@
 <span class="add">+    email: text(&quot;email&quot;).notNull(), // stored lower-case</span>
 <span class="add">+    name: text(&quot;name&quot;),</span>
 <span class="add">+    passwordHash: text(&quot;password_hash&quot;).notNull(),</span>
-<span class="add">+    createdAt: timestamp(&quot;created_at&quot;, { withTimezone: true }).notNull().defaultNow(),</span></pre><p class="more">18 more lines in the commit.</p></details>
+<span class="add">+    createdAt: timestamp(&quot;created_at&quot;, { withTimezone: true }).notNull().defaultNow(),</span>
+<span class="add">+  },</span>
+<span class="add">+  // The database, not the app, guarantees one account per email.</span>
+<span class="add">+  (t) =&gt; [uniqueIndex(&quot;users_email_lower_unique&quot;).on(sql`lower(${t.email})`)],</span>
+<span class="add">+);</span>
+<span class=""> </span>
+<span class=""> export const services = pgTable(&quot;services&quot;, {</span>
+<span class="file">src/lib/db-errors.ts</span>
+<span class="meta">--- /dev/null</span>
+<span class="meta">+++ b/src/lib/db-errors.ts</span>
+<span class="hunk">@@ -0,0 +1,7 @@</span>
+<span class="add">+/** True when Postgres rejected a write because of a unique index (SQLSTATE 23505). */</span>
+<span class="add">+export function isUniqueViolation(err: unknown): boolean {</span>
+<span class="add">+  for (let e = err as { code?: string; cause?: unknown } | undefined; e; e = e.cause as typeof e) {</span>
+<span class="add">+    if (e.code === &quot;23505&quot;) return true;</span>
+<span class="add">+  }</span>
+<span class="add">+  return false;</span>
+<span class="add">+}</span>
+<span class=""> </span></pre></details>
   </article>
   <article class="card">
     <header><h2>Found while fixing</h2></header>
