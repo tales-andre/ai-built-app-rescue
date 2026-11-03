@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { firstError } from "@/lib/form-errors";
 
 type Service = { id: number; name: string; durationMin: number; priceCents: number };
 
@@ -25,7 +26,7 @@ export default function BookPage() {
     });
     if (res.status === 401) return router.push("/login");
     const data = await res.json();
-    if (!res.ok) return setError(data.error ?? "Could not book");
+    if (!res.ok) return setError(firstError(data) ?? "Could not book");
     router.push("/bookings");
   }
 

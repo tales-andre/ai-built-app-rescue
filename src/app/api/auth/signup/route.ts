@@ -3,12 +3,14 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { isUniqueViolation } from "@/lib/db-errors";
 import { hashPassword, sessionCookie } from "@/lib/session";
+import { parseBody, SignupInput } from "@/lib/validation";
 
 const taken = () => Response.json({ error: "Email already registered" }, { status: 409 });
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const email = String(body.email ?? "").trim().toLowerCase();
+  const { data: body, error } = await parseBody(req, SignupInput);
+  if (error) return error;
+  const email = body.email.trim().toLowerCase();
   const db = await getDb();
 
   // Friendly early answer; the unique index below is what actually guarantees it.

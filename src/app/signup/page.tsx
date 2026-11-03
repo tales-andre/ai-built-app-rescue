@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { firstError } from "@/lib/form-errors";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export default function SignupPage() {
       body: JSON.stringify(Object.fromEntries(form)),
     });
     const data = await res.json();
-    if (!res.ok) return setError(data.error ?? "Sign-up failed");
+    if (!res.ok) return setError(firstError(data) ?? "Sign-up failed");
     localStorage.setItem("user", JSON.stringify(data.user));
     router.push("/bookings");
   }
