@@ -32,3 +32,19 @@ export async function parseBody<S extends z.ZodType>(
   }
   return { data: result.data };
 }
+
+// A PayDemo webhook event, checked after its signature. Every event has an id and
+// a type; other types are accepted and ignored.
+export const PayDemoEvent = z.object({
+  id: z.string().min(1).max(200),
+  type: z.string().min(1).max(100),
+});
+
+// A checkout.completed event must say which booking it is for.
+export const CheckoutCompletedEvent = PayDemoEvent.extend({
+  type: z.literal("checkout.completed"),
+  data: z.object({
+    bookingId: z.coerce.number().int().positive(),
+    paymentMethod: z.string().min(1).max(200),
+  }),
+});
