@@ -1,6 +1,7 @@
 // Screenshots of the findings page and the captioned demo GIF.
 //   docs/cards.png        top of docs/index.html (first finding card)
 //   docs/demo.gif         test output before -> captions -> test output after
+//   docs/cover-crop-*.png crops of the finding card used by docs/cover.html
 // The terminal lines in the GIF are copied from docs/evidence/before.txt and
 // after.txt (run `node scripts/evidence.mjs` first); only the file path and the
 // timing are trimmed from each line.
@@ -109,6 +110,23 @@ const page = await browser.newPage({ viewport: { width: 1100, height: 1400 }, de
 await page.goto(pathToFileURL(path.resolve("docs/index.html")).href);
 await page.locator("#finding-1").screenshot({ path: "docs/cards.png" });
 await page.locator("#finding-2").screenshot({ path: "docs/card-other-customers.png" });
+
+// Crops for docs/cover.html (portfolio cover): the card's title and business risk,
+// and its first test rows with the before/after results. No counts or file names.
+async function clipOf(selectors, padTop = 12) {
+  const boxes = [];
+  for (const sel of selectors) boxes.push(await page.locator(sel).boundingBox());
+  const x = Math.min(...boxes.map((b) => b.x)) - 16;
+  const y = Math.min(...boxes.map((b) => b.y)) - padTop;
+  const right = Math.max(...boxes.map((b) => b.x + b.width)) + 16;
+  const bottom = Math.max(...boxes.map((b) => b.y + b.height)) + 12;
+  return { x, y, width: right - x, height: bottom - y };
+}
+await page.screenshot({ path: "docs/cover-crop-risk.png", clip: await clipOf(["#finding-2 header", "#finding-2 .owner"]) });
+await page.screenshot({
+  path: "docs/cover-crop-tests.png",
+  clip: await clipOf(["#finding-2 tbody tr:nth-child(1)", "#finding-2 tbody tr:nth-child(3)"], 0),
+});
 
 // 2. GIF
 const gif = GIFEncoder();
