@@ -1,13 +1,13 @@
 # ai-built-app-rescue
 
-An app built with an AI coding agent, reviewed and fixed for production: before and after, with
-tests.
+A demo app with the mistakes AI-generated code often ships with, reviewed and fixed for
+production: before and after, with tests.
 
 ![Demo: the same tests fail on the original code and pass after the fixes](docs/demo.gif)
 
-**A common request on freelance job boards:** *the app was put together mostly with an AI coding agent, it works in
-the demo, and now it has to take real customers and real payments. Can someone check what is
-wrong, fix it, and show that it is fixed?*
+**A common request on freelance job boards:** *the app was put together mostly with an AI coding
+agent, it works in the demo, and now it has to take real customers and real payments. Can someone
+check what is wrong, fix it, and show that it is fixed?*
 
 This repo shows how I answer that, on an **open-source demo** with a **fictional company**:
 Brightside Salons, a salon chain with an online booking app (Next.js, TypeScript, Postgres). The
