@@ -140,6 +140,10 @@ export async function getBooking(id: number) {
   return row;
 }
 
+export async function bookingsOf(userId: number) {
+  return db!.select().from(bookings).where(eq(bookings.userId, userId));
+}
+
 export async function allUsers() {
   return db!.select().from(users);
 }

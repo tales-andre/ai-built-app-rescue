@@ -2,6 +2,7 @@
 // customer can list and cancel any other customer's bookings.
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  bookingsOf,
   cancelBooking,
   createBooking,
   createBookingRaw,
@@ -24,7 +25,7 @@ beforeEach(async () => {
 });
 
 describe("Finding 2: a customer can see and cancel other customers' bookings", () => {
-  it("Alice cannot list Bob's bookings by changing the userId in the request", async () => {
+  it("Alice cannot list Bob's bookings by editing the request", async () => {
     const res = await listBookings(alice, { userId: bob.id });
     const body = await res.json();
     const ids = (body.bookings ?? []).map((b: { id: number }) => b.id);
@@ -39,10 +40,10 @@ describe("Finding 2: a customer can see and cancel other customers' bookings", (
 
   it("Alice cannot create a booking in Bob's name", async () => {
     const res = await createBookingRaw(alice, { userId: bob.id, serviceId: 1, date: "2026-11-10", time: "11:00" });
-    if (res.status === 201) {
-      const { booking } = await res.json();
-      expect(booking.userId).toBe(alice.id);
-    }
+    // Either refused, or booked for Alice herself; never a 500, never for Bob.
+    expect([201, 400, 403]).toContain(res.status);
+    if (res.status === 201) expect((await res.json()).booking.userId).toBe(alice.id);
+    expect((await bookingsOf(bob.id)).map((b) => b.id)).toEqual([bobsBooking.id]);
   });
 
   it("a logged-out visitor gets 401, not someone's bookings", async () => {

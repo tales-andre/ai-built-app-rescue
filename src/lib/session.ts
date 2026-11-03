@@ -32,14 +32,21 @@ function sign(value: string) {
   return createHmac("sha256", secret()).update(value).digest("base64url");
 }
 
+// In production the cookie is only sent over HTTPS. Browsers also accept a Secure
+// cookie on http://localhost, so `next start` on this machine still works.
+function attributes(maxAge: number) {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `Path=/; HttpOnly; SameSite=Lax${secure}; Max-Age=${maxAge}`;
+}
+
 export function sessionCookie(userId: number): string {
   const expires = Math.floor(Date.now() / 1000) + MAX_AGE_SECONDS;
   const value = `${userId}.${expires}`;
-  return `${SESSION_COOKIE}=${value}.${sign(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${MAX_AGE_SECONDS}`;
+  return `${SESSION_COOKIE}=${value}.${sign(value)}; ${attributes(MAX_AGE_SECONDS)}`;
 }
 
 export function clearSessionCookie(): string {
-  return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+  return `${SESSION_COOKIE}=; ${attributes(0)}`;
 }
 
 /** Returns the logged-in user id from the signed session cookie, or null. */

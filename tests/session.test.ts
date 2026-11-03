@@ -20,3 +20,13 @@ describe("Session secret", () => {
     expect(getSessionUserId(new Request("http://x", { headers: { cookie: forged } }))).toBeNull();
   });
 });
+
+describe("Session cookie", () => {
+  it("in production the session cookie is HttpOnly and only sent over HTTPS (Secure)", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("SESSION_SECRET", "the-real-secret");
+    const attrs = sessionCookie(1).split(";").map((a) => a.trim()).slice(1);
+    expect(attrs).toContain("HttpOnly");
+    expect(attrs).toContain("Secure");
+  });
+});
