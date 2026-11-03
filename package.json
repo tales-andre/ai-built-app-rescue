@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:before": "node scripts/test-before.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.14",
