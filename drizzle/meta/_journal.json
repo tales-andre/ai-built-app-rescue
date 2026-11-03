@@ -15,6 +15,13 @@
       "when": 1793707323914,
       "tag": "0001_processed_events",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793707363906,
+      "tag": "0002_unique_email",
+      "breakpoints": true
     }
   ]
 }
