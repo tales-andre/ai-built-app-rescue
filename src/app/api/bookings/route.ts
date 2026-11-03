@@ -2,10 +2,13 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { bookings, services } from "@/db/schema";
 import { isOpen, toAppointmentDate } from "@/lib/booking-time";
+import { getSessionUserId } from "@/lib/session";
 
-// Get bookings for a user
+// Bookings of the logged-in customer. The user comes from the signed session
+// cookie, never from the request: a ?userId= parameter is ignored.
 export async function GET(req: Request) {
-  const userId = Number(new URL(req.url).searchParams.get("userId"));
+  const userId = getSessionUserId(req);
+  if (!userId) return Response.json({ error: "Please log in" }, { status: 401 });
   const db = await getDb();
   const rows = await db
     .select({
@@ -25,8 +28,10 @@ export async function GET(req: Request) {
   return Response.json({ bookings: rows });
 }
 
-// Create a booking
+// Create a booking for the logged-in customer
 export async function POST(req: Request) {
+  const userId = getSessionUserId(req);
+  if (!userId) return Response.json({ error: "Please log in" }, { status: 401 });
   const body = await req.json();
   const db = await getDb();
 
@@ -43,6 +48,7 @@ export async function POST(req: Request) {
       priceCents: service?.priceCents,
       status: "pending_deposit",
       ...body,
+      userId,
       startsAt,
     })
     .returning();

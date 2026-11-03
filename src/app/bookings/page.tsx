@@ -20,7 +20,8 @@ export default function BookingsPage() {
     const u = JSON.parse(localStorage.getItem("user") ?? "null");
     setUser(u);
     if (!u) return;
-    const res = await fetch(`/api/bookings?userId=${u.id}`);
+    const res = await fetch("/api/bookings");
+    if (res.status === 401) return setUser(null);
     const data = await res.json();
     setBookings(data.bookings ?? []);
   }, []);
@@ -30,11 +31,7 @@ export default function BookingsPage() {
   }, [load]);
 
   async function cancel(id: number) {
-    await fetch(`/api/bookings/${id}/cancel`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ userId: user?.id }),
-    });
+    await fetch(`/api/bookings/${id}/cancel`, { method: "POST" });
     load();
   }
 

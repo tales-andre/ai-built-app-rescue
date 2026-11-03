@@ -21,8 +21,9 @@ export default function BookPage() {
     const res = await fetch("/api/bookings", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ...form, serviceId: Number(form.serviceId), userId: user.id }),
+      body: JSON.stringify({ ...form, serviceId: Number(form.serviceId) }),
     });
+    if (res.status === 401) return router.push("/login");
     const data = await res.json();
     if (!res.ok) return setError(data.error ?? "Could not book");
     router.push("/bookings");
