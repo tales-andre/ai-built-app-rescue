@@ -185,6 +185,8 @@ sequenceDiagram
   takes longer than running these tests.
 - Tested on Windows 11 with Node.js 22 (unit and e2e, Microsoft Edge); the GitHub Actions workflow
   targets Ubuntu with Chromium and has not run yet.
+- The optional real-Postgres path (`DATABASE_URL`, `docker compose`) was not run for this demo; the
+  tests and the screenshots use the embedded PGlite engine.
 - `npm audit` reports a moderate advisory in `drizzle-kit` (a development tool, through an old
   `esbuild`). It is not part of the running app.
 
