@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { formatSalonTime } from "@/lib/booking-time";
 import { PayDepositButton } from "./pay-deposit-button";
 
 type Booking = {
@@ -46,7 +47,7 @@ export default function BookingsPage() {
           <div>
             <strong>{b.service}</strong>{" "}
             <span className={`badge ${b.status}`}>{b.status.replace("_", " ")}</span>
-            <div className="muted">{new Date(b.startsAt).toLocaleString()}</div>
+            <div className="muted">{formatSalonTime(b.startsAt)} (salon time)</div>
             {b.notes && <div className="muted">{b.notes}</div>}
           </div>
           {b.status !== "cancelled" && (
