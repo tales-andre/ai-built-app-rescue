@@ -1,0 +1,80 @@
+
+Running 3 tests using 1 worker
+
+  x  1 e2e\bundle.spec.ts:16:5 › the browser bundle does not contain the payment secret key (52ms)
+  x  2 e2e\customer-flow.spec.ts:5:5 › a customer signs up, books a haircut and pays the deposit (22.5s)
+  x  3 e2e\other-customers-bookings.spec.ts:5:5 › a logged-in customer cannot read or cancel another customer's booking (1.7s)
+
+
+  1) e2e\bundle.spec.ts:16:5 › the browser bundle does not contain the payment secret key ──────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   ".next\\static\\chunks\\app\\bookings\\page-cdd9cb34cf369b0c.js",
+    + ]
+
+      18 |   expect(files.length).toBeGreaterThan(0);
+      19 |   const leaking = files.filter((f) => readFileSync(f, "utf8").includes(SECRET));
+    > 20 |   expect(leaking).toEqual([]);
+         |                   ^
+      21 |
+      22 |   // And the pages the server sends do not include it either.
+      23 |   for (const route of ["/", "/book", "/bookings", "/login"]) {
+        at <repo>\e2e\bundle.spec.ts:20:19
+
+    Error Context: test-results\bundle-the-browser-bundle--7a1cb-tain-the-payment-secret-key\error-context.md
+
+  2) e2e\customer-flow.spec.ts:5:5 › a customer signs up, books a haircut and pays the deposit ─────
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByTestId('booking')
+    Expected substring: "Tue, Nov 10, 10:00 AM (salon time)"
+    Received string:    "Haircut pending deposit11/10/2026, 4:00:00 AMShort on the sides, pleasePay depositCancel"
+    Timeout: 15000ms
+
+    Call log:
+      - Expect "toContainText" getByTestId('booking') with timeout 15000ms
+      - waiting for getByTestId('booking')
+        33 × locator resolved to <div class="card row" data-testid="booking">…</div>
+           - unexpected value "Haircut pending deposit11/10/2026, 4:00:00 AMShort on the sides, pleasePay depositCancel"
+
+
+      23 |   const booking = page.getByTestId("booking");
+      24 |   await expect(booking).toContainText("Haircut");
+    > 25 |   await expect(booking).toContainText("Tue, Nov 10, 10:00 AM (salon time)");
+         |                         ^
+      26 |   await expect(booking).toContainText("pending deposit");
+      27 |
+      28 |   // Server route -> PayDemo simulator -> signed webhook -> deposit charged once.
+        at <repo>\e2e\customer-flow.spec.ts:25:25
+
+    Error Context: test-results\customer-flow-a-customer-s-d4f1c-aircut-and-pays-the-deposit\error-context.md
+
+  3) e2e\other-customers-bookings.spec.ts:5:5 › a logged-in customer cannot read or cancel another customer's booking 
+
+    Error: expect(received).not.toContain(expected) // indexOf
+
+    Expected substring: not "Bob's private note"
+    Received string:        "{\"bookings\":[{\"id\":2,\"userId\":2,\"startsAt\":\"2026-11-12T14:00:00.000Z\",\"status\":\"pending_deposit\",\"priceCents\":14000,\"notes\":\"Bob's private note\",\"service\":\"Color\",\"depositCents\":4000}]}"
+
+      31 |   // With her own session cookie, she asks for Bob's bookings and tries to cancel his.
+      32 |   const list = await (await page.request.get(`/api/bookings?userId=${bobUser.id}`)).json();
+    > 33 |   expect(JSON.stringify(list)).not.toContain("Bob's private note");
+         |                                    ^
+      34 |   const cancel = await page.request.post(`/api/bookings/${bobBooking.id}/cancel`, { data: { userId: bobUser.id } });
+      35 |   expect(cancel.status()).toBe(404);
+      36 |
+        at <repo>\e2e\other-customers-bookings.spec.ts:33:36
+
+    Error Context: test-results\other-customers-bookings-a-d0882--another-customer-s-booking\error-context.md
+
+  3 failed
+    e2e\bundle.spec.ts:16:5 › the browser bundle does not contain the payment secret key ───────────
+    e2e\customer-flow.spec.ts:5:5 › a customer signs up, books a haircut and pays the deposit ──────
+    e2e\other-customers-bookings.spec.ts:5:5 › a logged-in customer cannot read or cancel another customer's booking 

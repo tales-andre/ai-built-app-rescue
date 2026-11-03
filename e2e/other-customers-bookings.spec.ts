@@ -39,7 +39,7 @@ test("a logged-in customer cannot read or cancel another customer's booking", as
   await page.reload();
   await expect(page.getByText("No bookings yet.")).toBeVisible();
   await expect(page.getByText("Bob's private note")).toHaveCount(0);
-  if (shots) await page.screenshot({ path: `${shots}/app-idor-blocked.png` });
+  if (shots) await page.screenshot({ path: `${shots}/app-idor-blocked.png`, clip: { x: 0, y: 0, width: 1280, height: 260 } });
 
   // Bob's booking is untouched.
   const bobList = await (await bob.get("/api/bookings")).json();

@@ -14,6 +14,9 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     headless: true,
+    // The customer is in Chicago; the server runs in UTC, like most hosts.
+    timezoneId: "America/Chicago",
+    locale: "en-US",
     // Locally on Windows, the installed Edge; in CI, Playwright's Chromium.
     channel: process.env.PW_CHANNEL ?? (process.platform === "win32" ? "msedge" : undefined),
   },
@@ -22,6 +25,6 @@ export default defineConfig({
     url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: false,
     timeout: 120_000,
-    env: { PGLITE_DATA_DIR: ".data/e2e", DEMO_DEFAULTS: "1" },
+    env: { PGLITE_DATA_DIR: ".data/e2e", DEMO_DEFAULTS: "1", TZ: "UTC" },
   },
 });

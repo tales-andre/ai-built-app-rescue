@@ -6,7 +6,7 @@
 //   node scripts/test-before.mjs --json out.json # also writes vitest's JSON report
 //   node scripts/test-before.mjs --strict        # exit with vitest's exit code
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, existsSync, rmSync, symlinkSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, rmSync, symlinkSync, unlinkSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = process.cwd();
@@ -19,6 +19,10 @@ const extra = args.filter((a, i) => !["--json", "--strict"].includes(a) && args[
 const git = (...a) => execFileSync("git", a, { cwd: ROOT, stdio: "pipe" }).toString();
 
 if (existsSync(BEFORE)) {
+  // Unlink the node_modules junction FIRST: `git worktree remove` would follow it
+  // and delete the main node_modules.
+  const link = path.join(BEFORE, "node_modules");
+  try { if (lstatSync(link).isSymbolicLink()) unlinkSync(link); } catch {}
   try { git("worktree", "remove", "--force", BEFORE); } catch { rmSync(BEFORE, { recursive: true, force: true }); }
   try { git("worktree", "prune"); } catch {}
 }

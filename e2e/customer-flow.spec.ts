@@ -28,5 +28,5 @@ test("a customer signs up, books a haircut and pays the deposit", async ({ page 
   // Server route -> PayDemo simulator -> signed webhook -> deposit charged once.
   await booking.getByRole("button", { name: "Pay deposit" }).click();
   await expect(booking).toContainText("confirmed");
-  if (shots) await page.screenshot({ path: `${shots}/app-bookings.png` });
+  if (shots) await page.screenshot({ path: `${shots}/app-bookings.png`, clip: { x: 0, y: 0, width: 1280, height: 300 } });
 });
