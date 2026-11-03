@@ -1,18 +1,15 @@
 "use client";
 import { useState } from "react";
 
-// Opens the PayDemo checkout for the deposit
+// Starts the PayDemo checkout for the deposit through our own server route
 export function PayDepositButton({ bookingId, onDone }: { bookingId: number; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
 
   async function pay() {
     setBusy(true);
-    await fetch("/api/paydemo-sim/checkout", {
+    await fetch("/api/checkout", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: `Bearer ${process.env.NEXT_PUBLIC_PAYDEMO_SECRET_KEY}`,
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ bookingId }),
     });
     setBusy(false);

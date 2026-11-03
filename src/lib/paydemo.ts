@@ -1,3 +1,6 @@
+import "server-only";
+import { serverSecret } from "./env";
+
 // Client for "PayDemo", a FICTIONAL payment provider used only in this demo.
 // The provider side is simulated in-process: charges are kept in memory, and
 // /api/paydemo-sim/checkout plays the provider's hosted checkout page.
@@ -39,6 +42,25 @@ export async function charge(params: {
   const created: Charge = { id: `ch_sim_${s.seq}`, createdAt: new Date().toISOString(), ...params };
   s.charges.push(created);
   return created;
+}
+
+/**
+ * Starts the provider's hosted checkout for a booking deposit. Runs on the server
+ * only: it is the one place that uses the secret key. PAYDEMO_API_URL defaults to
+ * the in-app simulator.
+ */
+export async function createCheckout(bookingId: number, origin: string): Promise<{ status: string }> {
+  const base = process.env.PAYDEMO_API_URL ?? `${origin}/api/paydemo-sim`;
+  const res = await fetch(`${base}/checkout`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${serverSecret("PAYDEMO_SECRET_KEY", "sk_demo_51BrightsideDoNotShip")}`,
+    },
+    body: JSON.stringify({ bookingId }),
+  });
+  if (!res.ok) throw new Error(`PayDemo checkout failed: ${res.status}`);
+  return res.json();
 }
 
 // --- simulator controls (demo and tests only) ---
