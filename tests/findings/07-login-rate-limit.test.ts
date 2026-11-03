@@ -17,6 +17,14 @@ describe("Finding 7: unlimited password guessing", () => {
     expect(Number(res.headers.get("retry-after"))).toBeGreaterThan(0);
   });
 
+  it("30 wrong passwords sent at the same moment: only 5 are checked, the rest are paused", async () => {
+    const burst = await Promise.all(Array.from({ length: 30 }, (_, i) => login("grace@example.com", `burst-${i}`)));
+    const statuses = burst.map((r) => r.status);
+    expect(statuses.filter((s) => s === 401)).toHaveLength(5);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(25);
+    expect((await login("grace@example.com", PASSWORD)).status).toBe(429);
+  });
+
   it("the limit is per account, whatever the letter case", async () => {
     for (let i = 0; i < 5; i++) await login(i % 2 ? "GRACE@example.com" : "grace@example.com", `guess-${i}`);
     expect((await login("Grace@Example.com", PASSWORD)).status).toBe(429);
