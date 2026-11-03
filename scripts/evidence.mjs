@@ -3,12 +3,14 @@
 //   before.txt / after.txt   vitest output, verbatim (ANSI colors and local paths removed)
 //   results.json             per test: passed / failed, before and after
 //   e2e-before.txt / e2e-after.txt   with --e2e: Playwright on both production builds
+//   docs/screenshots/*.png            with --e2e: app screenshots (before-*.png from the tag)
 //
 //   node scripts/evidence.mjs [--e2e]
 import { spawnSync } from "node:child_process";
 import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import path from "node:path";
+import { removeBeforeWorktree } from "./before-worktree.mjs";
 
 /** Waits until nothing listens on the port (the previous Next server can take a moment to exit). */
 async function waitForFreePort(port, ms = 30_000) {
@@ -64,7 +66,8 @@ const node = process.execPath;
 const vitest = path.join(ROOT, "node_modules", "vitest", "vitest.mjs");
 
 console.log("1/2 before (tag vibe-coded)...");
-const before = run(node, ["scripts/test-before.mjs", "--json", path.join(TMP, "before.json")]);
+// --keep: the e2e step below builds the same worktree.
+const before = run(node, ["scripts/test-before.mjs", "--keep", "--json", path.join(TMP, "before.json")]);
 writeFileSync(path.join(OUT, "before.txt"), before.out);
 
 console.log("2/2 after (working tree)...");
@@ -76,16 +79,24 @@ writeFileSync(path.join(OUT, "results.json"), JSON.stringify(results, null, 2) +
 console.log(`before: ${results.before.passed} passed, ${results.before.failed} failed`);
 console.log(`after:  ${results.after.passed} passed, ${results.after.failed} failed`);
 
-if (process.argv.includes("--e2e")) {
+const SHOTS = path.join(ROOT, "docs", "screenshots");
+
+try {
+  if (process.argv.includes("--e2e")) await e2e();
+} finally {
+  removeBeforeWorktree(); // node_modules link first, then the worktree
+}
+
+async function e2e() {
   console.log("e2e after...");
   let r = run("npx", ["next", "build"]);
   if (r.code !== 0) throw new Error("build failed\n" + r.out);
-  r = run("npx", ["playwright", "test", "--reporter=list"]);
+  r = run("npx", ["playwright", "test", "--reporter=list"], ROOT, { SCREENSHOTS_DIR: SHOTS });
   writeFileSync(path.join(OUT, "e2e-after.txt"), r.out);
 
   await waitForFreePort(3100);
   console.log("e2e before...");
-  const B = path.join(ROOT, ".before"); // left in place by test-before.mjs
+  const B = path.join(ROOT, ".before"); // left in place by test-before.mjs --keep
   cpSync(path.join(ROOT, "e2e"), path.join(B, "e2e"), { recursive: true });
   copyFileSync(path.join(ROOT, "playwright.config.ts"), path.join(B, "playwright.config.ts"));
   copyFileSync(path.join(B, ".env.example"), path.join(B, ".env.local")); // the "before" .env, secret included
@@ -98,4 +109,10 @@ if (process.argv.includes("--e2e")) {
   await waitForFreePort(3100);
   r = run("npx", ["playwright", "test", "--reporter=list"], B);
   writeFileSync(path.join(OUT, "e2e-before.txt"), r.out);
+
+  // Screenshot of the leak on the "before" app: Alice's browser showing Bob's booking.
+  // (On this version the test fails right after the screenshot, as expected.)
+  await waitForFreePort(3100);
+  console.log("before screenshot...");
+  run("npx", ["playwright", "test", "--reporter=list", "-g", "another customer"], B, { SCREENSHOTS_DIR: SHOTS, SHOT_PREFIX: "before-" });
 }

@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
-
-const shots = process.env.SCREENSHOTS_DIR;
+import { shotPath } from "./shots";
 
 test("a customer signs up, books a haircut and pays the deposit", async ({ page }) => {
   await page.goto("/signup");
@@ -17,7 +16,8 @@ test("a customer signs up, books a haircut and pays the deposit", async ({ page 
   await page.getByLabel("Date").fill("2026-11-10");
   await page.getByLabel("Time").fill("10:00");
   await page.getByLabel("Notes").fill("Short on the sides, please");
-  if (shots) await page.screenshot({ path: `${shots}/app-book.png` });
+  const bookShot = shotPath("app-book.png");
+  if (bookShot) await page.screenshot({ path: bookShot });
   await page.getByRole("button", { name: "Book" }).click();
 
   const booking = page.getByTestId("booking");
@@ -28,5 +28,6 @@ test("a customer signs up, books a haircut and pays the deposit", async ({ page 
   // Server route -> PayDemo simulator -> signed webhook -> deposit charged once.
   await booking.getByRole("button", { name: "Pay deposit" }).click();
   await expect(booking).toContainText("confirmed");
-  if (shots) await page.screenshot({ path: `${shots}/app-bookings.png`, clip: { x: 0, y: 0, width: 1280, height: 300 } });
+  const listShot = shotPath("app-bookings.png");
+  if (listShot) await page.screenshot({ path: listShot, clip: { x: 0, y: 0, width: 1280, height: 300 } });
 });

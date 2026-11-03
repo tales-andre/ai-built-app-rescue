@@ -23,6 +23,8 @@ header.top {
 }
 header.top a.brand { font-weight: 700; color: var(--brand); text-decoration: none; font-size: 18px; }
 header.top nav a { margin-left: 18px; color: var(--ink); text-decoration: none; }
+header.top nav .who { margin-left: 18px; padding: 4px 10px; border-radius: 999px; background: #e3f1e8; color: var(--ok); font-size: 14px; }
+header.top nav button.link { margin-left: 12px; padding: 0; background: none; color: var(--brand); text-decoration: underline; font-size: 14px; }
 main { max-width: 760px; margin: 32px auto; padding: 0 16px; }
 h1 { font-size: 28px; margin: 0 0 18px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }

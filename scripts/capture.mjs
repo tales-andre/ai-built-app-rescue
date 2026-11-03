@@ -63,7 +63,7 @@ const plain = (rows, ok) => rows.map((t) => ({ ok, text: t }));
 const frames = [
   {
     ms: 2600,
-    html: `<div class="title"><div class="tag red">Before</div><h1>A salon booking app, as an AI coding agent shipped it</h1><div class="sub">Fictional company, open-source demo. Same tests run on both versions.</div></div>`,
+    html: `<div class="title"><div class="tag red">Before</div><h1>A salon booking app, with mistakes AI-generated code often ships with</h1><div class="sub">Fictional company, open-source demo. Same tests run on both versions.</div></div>`,
   },
   {
     ms: 3800,
@@ -71,7 +71,7 @@ const frames = [
   },
   {
     ms: 3800,
-    html: term("npm run test:before", lines(before, "03-payment-webhook")) + cap("bad", "A fake or repeated payment message charged the card again"),
+    html: term("npm run test:before", lines(before, "03-payment-webhook")) + cap("bad", "A fake payment message could charge cards; a repeated one charged twice"),
   },
   {
     ms: 3800,

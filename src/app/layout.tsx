@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AccountNav } from "./account-nav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <nav>
             <Link href="/book">Book</Link>
             <Link href="/bookings">My bookings</Link>
-            <Link href="/login">Log in</Link>
+            <AccountNav />
           </nav>
         </header>
         <main>{children}</main>
