@@ -3,6 +3,11 @@
 A demo app with the mistakes AI-generated code often ships with, reviewed and fixed for
 production: before and after, with tests.
 
+> Need this on your own app? Fixed-scope review and fix on Upwork: https://www.upwork.com/services/product/2117770893902192528.
+>
+> Versão em português, paga por Pix: https://tales-andre.github.io/raio-x-producao/.
+
+
 ![Demo: the same tests fail on the original code and pass after the fixes](docs/demo.gif)
 
 **A common request on freelance job boards:** *the app was put together mostly with an AI coding
