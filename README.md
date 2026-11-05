@@ -126,6 +126,7 @@ his own booking" and "a couple of typos followed by the right password still log
 docker compose up -d
 echo "DATABASE_URL=postgres://postgres:postgres@localhost:54330/brightside" >> .env.local
 npm run dev
+npm run test:pg      # the same suite against that server, one file at a time
 ```
 
 **Regenerate the evidence, the findings page, the GIF and the PDF:**
@@ -210,10 +211,13 @@ sequenceDiagram
   takes longer than running these tests.
 - Tested on Windows 11 with Node.js 22 (unit and e2e, Microsoft Edge); the GitHub Actions workflow
   targets Ubuntu with Chromium and has not run yet.
-- The optional real-Postgres path (`DATABASE_URL`, `docker compose`) was not run for this demo; the
-  tests and the screenshots use the embedded PGlite engine. PGlite runs one transaction at a time,
-  so the parallel tests cannot catch a missing row lock (webhook) or advisory lock (login); those
-  locks matter on a Postgres server with several connections, which this demo did not test.
+- The screenshots and the evidence files use the embedded PGlite engine, which runs one
+  transaction at a time, so on PGlite the parallel tests cannot catch a missing row lock (webhook)
+  or advisory lock (login). On 2026-11-05 the suite was also run against PostgreSQL 16 in Docker
+  (`npm run test:pg`: node-postgres pool, up to 10 connections, files in sequence): 10 files,
+  42 tests passed, including the 30 simultaneous logins, the two checkouts at the same moment and
+  the parallel signups. That shows the fixed version holds under real concurrency; it does not
+  show that removing a lock would make a test fail, which is the next experiment.
 - The session cookie is `Secure` in production. Browsers accept that on `http://localhost`, so
   `npm start` works on your machine; on any other host, serve the app over HTTPS.
 - `npm audit` reports a moderate advisory in `drizzle-kit` (a development tool, through an old
