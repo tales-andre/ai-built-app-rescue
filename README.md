@@ -4,8 +4,6 @@ A demo app with the mistakes AI-generated code often ships with, reviewed and fi
 production: before and after, with tests.
 
 > Need this on your own app? Fixed-scope review and fix on Upwork: https://www.upwork.com/services/product/2117770893902192528.
->
-> Versão em português, paga por Pix: https://tales-andre.github.io/raio-x-producao/.
 
 
 ![Demo: the same tests fail on the original code and pass after the fixes](docs/demo.gif)
@@ -209,8 +207,10 @@ sequenceDiagram
 - The original app is small (about a dozen routes) and its mistakes were planted on purpose. A real
   review starts by mapping the app and agreeing on what "production" means for the owner, which
   takes longer than running these tests.
-- Tested on Windows 11 with Node.js 22 (unit and e2e, Microsoft Edge); the GitHub Actions workflow
-  targets Ubuntu with Chromium and has not run yet.
+- Tested on Windows 11 with Node.js 22 (unit and e2e, Microsoft Edge). The GitHub Actions workflow
+  runs the same suite on Ubuntu with Chromium on every push and pull request: the fixed code must
+  pass, the finding tests must fail on the `vibe-coded` tag, and the end-to-end tests run on the
+  production build.
 - The screenshots and the evidence files use the embedded PGlite engine, which runs one
   transaction at a time, so on PGlite the parallel tests cannot catch a missing row lock (webhook)
   or advisory lock (login). On 2026-11-05 the suite was also run against PostgreSQL 16 in Docker
