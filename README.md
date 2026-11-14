@@ -3,12 +3,9 @@
 A demo app with the mistakes AI-generated code often ships with, reviewed and fixed for
 production: before and after, with tests.
 
-> Need this on your own app? Fixed-scope review and fix on Upwork: https://www.upwork.com/services/product/2117770893902192528.
-
-
 ![Demo: the same tests fail on the original code and pass after the fixes](docs/demo.gif)
 
-**A common request on freelance job boards:** *the app was put together mostly with an AI coding
+**The question:** *the app was put together mostly with an AI coding
 agent, it works in the demo, and now it has to take real customers and real payments. Can someone
 check what is wrong, fix it, and show that it is fixed?*
 
